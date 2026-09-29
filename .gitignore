@@ -1,5 +1,8 @@
 # Editor / OS cruft
-.vscode/
+# Ignore the folder contents, but keep the shared Live Server port setting.
+# (.vscode/ alone would stop git from re-including anything inside it.)
+.vscode/*
+!.vscode/settings.json
 .idea/
 *.swp
 Thumbs.db

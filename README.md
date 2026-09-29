@@ -35,3 +35,7 @@ Open `index.html` by double-clicking it, or use the Live Server extension in VS 
 State, then render: change the state object `S`, then call `draw()` to rebuild the
 picture. `solve()` is the electronics logic. See [`STUDY_GUIDE.md`](STUDY_GUIDE.md) for
 the suggested reading order and practice exercises.
+
+## Livesite:
+
+https://kennethgaytano.github.io/CircuitSim/

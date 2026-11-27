@@ -223,7 +223,9 @@ const ICONS=[
  '<path d="M6 5V27M26 5V27M6 10H26M6 22H26"/><circle cx="16" cy="10" r="3" fill="var(--card)"/><circle cx="16" cy="22" r="3" fill="var(--card)"/>',
  '<path d="M2 22H6M26 22H30M6 22L22 10"/><circle cx="6" cy="22" r="2.5" fill="var(--card)"/><circle cx="26" cy="22" r="2.5" fill="var(--card)"/>',
  '<path d="M2 16H6M26 8H30M26 24H30M6 16L22 9"/><circle cx="6" cy="16" r="2.5" fill="var(--card)"/><circle cx="26" cy="8" r="2.5" fill="var(--card)"/><circle cx="26" cy="24" r="2.5" fill="var(--card)"/>',
- '<path d="M4 16L16 5L28 16M8 14V27H24V14"/><path d="M17 15L13 22H18L15 27"/>'
+ '<path d="M4 16L16 5L28 16M8 14V27H24V14"/><path d="M17 15L13 22H18L15 27"/>',
+ '<path d="M5 16H10M22 16H27M10 16V12A6 6 0 0 1 22 12V16"/><rect x="10" y="16" width="12" height="9" rx="3"/><path d="M16 19V22"/>',
+ '<path d="M4 16H11M21 16H28M11 16L14 13M18 19L21 16"/><circle cx="16" cy="15" r="8"/><path d="M22 21L28 27"/><path d="M13 15H15M17 15H19"/>'
 ];
 const ico=i=>`<svg class="ico" viewBox="0 0 32 32" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${ICONS[i]}</svg>`;
 // Pages: homepage, activity menu, wiring screen

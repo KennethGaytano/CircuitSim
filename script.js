@@ -216,7 +216,7 @@ $('defBtn').onclick=()=>{const d=DEFS[cur];
  $('def').showModal();$('def').scrollTop=0};
 $('defClose').onclick=()=>$('def').close();
 $('def').addEventListener('click',e=>{if(e.target===$('def'))$('def').close()});
-ACTS.forEach((a,i)=>{const b=document.createElement('button');const [n,l]=a.name.split('. ');b.innerHTML=`<b>${n}</b><small>${l.replace(/ (switch|wiring)$/,'').replace('Three-way','3-way')}</small>`;b.setAttribute('aria-label',a.title);b.onclick=()=>load(i);$('tabs').appendChild(b)});
+ACTS.forEach((a,i)=>{const b=document.createElement('button');const [n,l]=a.name.split('. '),label=l||a.title;b.innerHTML=`<b>${n}</b><small>${label.replace(/ (switch|wiring)$/,'').replace('Three-way','3-way')}</small>`;b.setAttribute('aria-label',a.title);b.onclick=()=>load(i);$('tabs').appendChild(b)});
 // Activity symbols
 const ICONS=[
  '<path d="M5 8H27V24H5Z"/><circle cx="12" cy="8" r="3" fill="var(--card)"/><circle cx="20" cy="8" r="3" fill="var(--card)"/><path d="M14 20V28M18 22V26" stroke-width="3"/>',

@@ -8,32 +8,60 @@
 </head>
 <body>
 <main id="home">
-  <section class="card hero">
-    <svg viewBox="0 0 220 120" aria-hidden="true">
-      <path class="wire on" d="M50 85H30V35H92M128 35H190V85H170"/>
-      <path class="wire on" d="M50 85H150"/>
-      <circle cx="110" cy="35" r="30" fill="var(--glow)" opacity=".3"/>
-      <circle cx="110" cy="35" r="18" fill="var(--glow)" stroke="var(--wire)" stroke-width="2"/>
-      <path d="M100 45L120 25M100 25L120 45" stroke="var(--wire)" stroke-width="2"/>
-      <rect class="box" x="45" y="70" width="55" height="30" rx="6"/>
-      <text class="st" x="72" y="89">9V</text>
-      <rect class="box" x="120" y="70" width="55" height="30" rx="6"/>
-      <text class="st" x="147" y="89">ON</text>
-    </svg>
-    <div>
-      <h1 id="homeTitle" tabindex="-1">CircuitSim: Basic Electrical Wiring</h1>
-      <p>Practice wiring on a virtual board. Connect the terminals, switch on the power and see if your circuit works.</p>
-      <button id="start">Get started</button>
+<header class="site-header">
+  <a class="brand" href="#home" aria-label="CircuitSim home">
+    <svg viewBox="0 0 52 52" aria-hidden="true"><path d="M4 13h12M4 26h9M4 39h12M36 13h12M39 26h9M36 39h12"/><circle cx="5" cy="13" r="3"/><circle cx="5" cy="26" r="3"/><circle cx="5" cy="39" r="3"/><circle cx="47" cy="13" r="3"/><circle cx="47" cy="26" r="3"/><circle cx="47" cy="39" r="3"/><path class="bolt" d="M28 3 15 28h10l-2 21 15-29H27z"/></svg>
+    <span>Circuit<span>Sim</span></span>
+  </a>
+  <nav class="site-nav" aria-label="Main navigation">
+    <a class="active" href="#home">Home</a>
+    <button id="activitiesLink" type="button">Activities</button>
+    <a href="#howItWorks">How it works</a>
+    <a href="#about">About</a>
+  </nav>
+  <button id="start" class="header-cta" type="button">Start learning <span aria-hidden="true">→</span></button>
+</header>
+  <section class="hero">
+    <div class="hero-inner">
+      <div class="hero-copy">
+        <p class="eyebrow"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m2 9 10-5 10 5-10 5zM6 11v5c3 2 9 2 12 0v-5M22 9v6"/></svg>Learn by Doing</p>
+        <h1 id="homeTitle" tabindex="-1">Build circuits.<br><span>Understand wiring.</span></h1>
+        <p class="hero-lede">Practice basic electrical wiring in a safe, interactive virtual workspace.</p>
+        <div class="hero-actions">
+          <button id="exploreActivities" type="button">Explore Activities <span aria-hidden="true">→</span></button>
+          <button id="trySimulator" class="outline-cta" type="button"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m8 5 12 7-12 7z"/></svg>Try the Simulator</button>
+        </div>
+        <div class="hero-highlights" aria-label="CircuitSim features">
+          <div><svg class="highlight-icon bolt-icon" viewBox="0 0 32 40" aria-hidden="true"><path d="M19 1 4 22h10l-2 17 16-24H17z"/></svg><span>7 Guided<br>Activities</span></div>
+          <div><svg class="highlight-icon bars-icon" viewBox="0 0 36 36" aria-hidden="true"><path d="M3 32V22h7v10zm12 0V14h7v18zm12 0V4h7v28z"/></svg><span>Instant<br>Feedback</span></div>
+          <div><svg class="highlight-icon cube-icon" viewBox="0 0 36 36" aria-hidden="true"><path d="m18 2 15 8v17l-15 8L3 27V10zM3 10l15 9 15-9M18 19v16"/></svg><span>Free-Build<br>Sandbox</span></div>
+        </div>
+      </div>
+      <div class="hero-visual">
+        <img class="hero-art" src="assets/circuitsim-hero.png" alt="Circuit board simulation preview with a 5.0 volt power supply, switch, connecting wires, and glowing bulb" width="1643" height="957" fetchpriority="high" decoding="async">
+      </div>
     </div>
   </section>
-  <h2>How it works</h2>
-  <ol id="how3">
-    <li class="card"><strong>Pick an activity</strong><span>Choose from seven wiring exercises or experiment in the sandbox.</span></li>
-    <li class="card"><strong>Connect the wires</strong><span>Drag between two terminals, or tap one and then the other.</span></li>
-    <li class="card"><strong>Switch it on</strong><span>When the circuit is complete, use the switch or breaker to test it.</span></li>
-  </ol>
-  <h2>Activities you’ll practice</h2>
-  <ul id="feat"></ul>
+  <section id="howItWorks" class="learn-section">
+    <div class="section-inner">
+      <h2>Learn through hands-on practice</h2>
+      <span class="heading-mark" aria-hidden="true"></span>
+      <div id="how3">
+        <div class="learn-card"><span class="step-number">1</span><svg class="learn-icon cursor-icon" viewBox="0 0 48 48" aria-hidden="true"><path d="M11 5v32l9-9 7 14 6-3-7-13h13z"/></svg><span class="learn-copy"><strong>Choose an Activity</strong><span>Pick from guided activities or use the free-build sandbox.</span></span></div>
+        <span class="step-arrow" aria-hidden="true">→</span>
+        <div class="learn-card"><span class="step-number">2</span><svg class="learn-icon plug-icon" viewBox="0 0 48 48" aria-hidden="true"><path d="M17 6v13m14-13v13M11 19h26v5a13 13 0 0 1-13 13h0a13 13 0 0 1-13-13zM24 37v7"/></svg><span class="learn-copy"><strong>Connect the Wires</strong><span>Drag wires between terminals or tap to connect them.</span></span></div>
+        <span class="step-arrow" aria-hidden="true">→</span>
+        <div class="learn-card"><span class="step-number">3</span><svg class="learn-icon check-icon" viewBox="0 0 48 48" aria-hidden="true"><circle cx="24" cy="24" r="19"/><path d="m14 24 7 7 14-15"/></svg><span class="learn-copy"><strong>Test Your Circuit</strong><span>Turn on the power and check whether it works.</span></span></div>
+      </div>
+      <p class="safety-note"><span aria-hidden="true">ⓘ</span> Learning model — not a guide for real electrical installations.</p>
+    </div>
+  </section>
+  <section id="activities" class="activity-section section-inner">
+    <div class="section-heading"><p class="eyebrow light-eyebrow">Practice makes progress</p><h2>Choose your next circuit</h2><p>Start with the basics, then explore more complex wiring.</p></div>
+    <ul id="feat"></ul>
+    <div class="home-extra-actions"><button id="homeSandboxOpen" class="secondary" type="button">Or explore the free-build sandbox →</button><button id="homeTutorialOpen" class="secondary" type="button">Start the beginner tutorial</button></div>
+  </section>
+  <footer id="about" class="site-footer"><div class="footer-inner"><strong>CircuitSim</strong><span>A hands-on way to learn basic circuit concepts.</span><span class="footer-safety">A simplified learning model, not instructions for real electrical work.</span></div></footer>
 </main>
 <div id="menu" hidden>
 <header><button id="homeBtn">‹ Home</button></header>

@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>CircuitSim: Basic Electrical Wiring</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<main id="home">
+  <section class="card hero">
+    <svg viewBox="0 0 220 120" aria-hidden="true">
+      <path class="wire on" d="M50 85H30V35H92M128 35H190V85H170"/>
+      <path class="wire on" d="M50 85H150"/>
+      <circle cx="110" cy="35" r="30" fill="var(--glow)" opacity=".3"/>
+      <circle cx="110" cy="35" r="18" fill="var(--glow)" stroke="var(--wire)" stroke-width="2"/>
+      <path d="M100 45L120 25M100 25L120 45" stroke="var(--wire)" stroke-width="2"/>
+      <rect class="box" x="45" y="70" width="55" height="30" rx="6"/>
+      <text class="st" x="72" y="89">9V</text>
+      <rect class="box" x="120" y="70" width="55" height="30" rx="6"/>
+      <text class="st" x="147" y="89">ON</text>
+    </svg>
+    <div>
+      <h1 id="homeTitle" tabindex="-1">CircuitSim: Basic Electrical Wiring</h1>
+      <p>Practice wiring on a virtual board. Connect the terminals, switch on the power and see if your circuit works.</p>
+      <button id="start">Get started</button>
+    </div>
+  </section>
+  <h2>How it works</h2>
+  <ol id="how3">
+    <li class="card"><strong>Pick an activity</strong><span>Choose from seven wiring exercises or experiment in the sandbox.</span></li>
+    <li class="card"><strong>Connect the wires</strong><span>Drag between two terminals, or tap one and then the other.</span></li>
+    <li class="card"><strong>Switch it on</strong><span>When the circuit is complete, use the switch or breaker to test it.</span></li>
+  </ol>
+  <h2>Activities you’ll practice</h2>
+  <ul id="feat"></ul>
+</main>
+<div id="menu" hidden>
+<header><button id="homeBtn">‹ Home</button></header>
+<main>
+  <h1 id="menuTitle" tabindex="-1">Choose an activity</h1>
+  <p id="progress" aria-live="polite"></p>
+  <button id="resume" hidden>Continue where you left off</button>
+  <section class="card progress-card" aria-labelledby="progressTitle"><h2 id="progressTitle">Your progress</h2><p id="progressDetail"></p><button id="clearProgress" type="button">Reset saved progress</button></section>
+  <button id="sandboxOpen" class="secondary" type="button">Open free-build sandbox</button>
+  <button id="tutorialOpen" class="secondary" type="button">Start the beginner tutorial</button>
+  <ul id="list"></ul>
+</main>
+</div>
+<div id="app" hidden>
+<header>
+  <button id="menuBtn">‹ Activities</button>
+  <h1 id="appTitle" tabindex="-1">CircuitSim</h1>
+</header>
+<main>
+  <nav id="tabs" aria-label="Wiring activities"></nav>
+  <div class="work">
+    <section class="card info">
+      <div class="head"><h2 id="title"></h2><button id="defBtn" aria-haspopup="dialog">Definition</button></div>
+      <p id="goal"></p>
+      <p id="explanation" class="explanation" aria-live="polite"></p>
+      <details id="how"><summary>Steps and tip</summary>
+        <ol id="steps"></ol>
+        <p id="tip"></p>
+        <p id="interactionHelp">How to wire: drag from one terminal (circle) to another, or tap one then the other. Tap a wire to remove it. When the circuit is complete, tap the switch or breaker to turn it on. On a keyboard, use Tab and Enter.</p>
+        <p>The steps show one way to wire it. The simulator accepts circuits that meet the activity goal. This is a learning model, not a guide for real electrical installations.</p>
+      </details>
+    </section>
+    <div id="stage"><svg id="svg" viewBox="0 0 360 400" role="group" aria-label="Wiring board"></svg></div>
+    <div class="bar">
+      <div id="status" aria-live="polite"></div>
+      <div class="tools">
+        <button id="undo">Undo wire</button>
+        <button id="reset">Reset</button>
+        <button id="guide">Show guide</button>
+        <button id="explain">Explain circuit</button>
+        <button id="next" hidden>Next ›</button>
+      </div>
+    </div>
+  </div>
+</main>
+</div>
+<dialog id="tutorial" aria-labelledby="tutorialTitle">
+  <div class="dlg">
+    <h2 id="tutorialTitle">First circuit tutorial</h2>
+    <p id="tutorialText"></p>
+    <div class="tutorial-actions"><button id="tutorialHint" type="button">Give me a hint</button><button id="tutorialNext" type="button">Next</button><button id="tutorialClose" type="button">Close</button></div>
+  </div>
+</dialog>
+<dialog id="def" aria-labelledby="defTitle">
+  <div class="dlg">
+    <h2 id="defTitle" tabindex="-1" autofocus></h2>
+    <p id="defText"></p>
+    <dl id="defTerms"></dl>
+    <button id="defClose">Close</button>
+  </div>
+</dialog>
+<script src="script.js"></script>
+</body>
+</html>

@@ -505,7 +505,7 @@ function check() {
 }
 function lit() {
   const kind = ACTS[cur].kind;
-  if (!done && kind !== "sandbox") return false;
+  if (!done && kind !== "sandbox" && kind !== "fault") return false;
   if (kind === "series") return !!state.sw;
   const st = Object.fromEntries(toggles().map((c) => [c.id, !!state[c.id]]));
   if (kind === "sandbox")
@@ -658,6 +658,10 @@ function drawComp(c) {
 }
 function render() {
   const A = ACTS[cur];
+  const sandbox = A.kind === "sandbox";
+  $("guide").hidden = sandbox;
+  $("explain").hidden = sandbox;
+  $("undo").parentElement.classList.toggle("sandbox-tools", sandbox);
   let s = "";
   if (showGuide)
     A.nets.forEach((n) => {
@@ -699,7 +703,7 @@ function render() {
     st.textContent =
       problem ||
       (full
-        ? "Something is wired wrong. Tap a wire to remove it, or show the guide."
+        ? "Something is wired wrong. Tap or drag a wire to remove it, or show the guide."
         : sel
           ? "Now tap another terminal to connect it."
           : wires.length
@@ -745,10 +749,10 @@ function load(i, reset = false) {
   $("explanation").textContent = "";
   $("interactionHelp").textContent =
     A.kind === "button"
-      ? "How to wire: drag or tap between terminals. When the circuit is complete, press and hold the button to light the lamp; release it to turn the lamp off. Use Tab and Enter on a keyboard."
+      ? "How to wire: drag or tap between terminals. Tap or drag a wire to remove it. When the circuit is complete, press and hold the button to light the lamp; release it to turn the lamp off. Use Tab and Enter on a keyboard."
       : A.kind === "sandbox"
-        ? "How to wire: drag or tap between terminals. Tap a wire to remove it. In this sandbox, switches toggle freely and there is no pass or fail goal."
-        : "How to wire: drag from one terminal (circle) to another, or tap one then the other. Tap a wire to remove it. When the circuit is complete, tap the switch or breaker to turn it on. On a keyboard, use Tab and Enter.";
+        ? "How to wire: drag or tap between terminals. Tap or drag a wire to remove it. In this sandbox, switches toggle freely and there is no pass or fail goal."
+        : "How to wire: drag from one terminal (circle) to another, or tap one then the other. Tap or drag a wire to remove it. When the circuit is complete, tap the switch or breaker to turn it on. On a keyboard, use Tab and Enter.";
   const ys = A.comps.map((c) => c.y + (c.h || 50) / 2);
   svg.setAttribute("viewBox", `0 0 360 ${Math.max(...ys) + 8}`);
   done = check();
@@ -770,7 +774,8 @@ function addWire(a, b) {
     return;
   wires.push([a, b]);
 }
-let pressedButton = false;
+let pressedButton = false,
+skipWireClick = false;
 svg.addEventListener("pointerdown", (e) => {
   const g = e.target.closest('[data-tog="btn"]');
   if (g && done) {
@@ -780,13 +785,32 @@ svg.addEventListener("pointerdown", (e) => {
     render();
     return;
   }
+  const w = e.target.closest(".hit[data-w]");
+  if (w) {
+    drag = {
+      wireIndex: +w.dataset.w,
+      startX: e.clientX,
+      startY: e.clientY,
+      moved: false,
+    };
+    return;
+  }
   const t = e.target.closest(".term");
   if (!t) return;
   e.preventDefault();
   drag = { id: t.dataset.t, moved: false };
 });
-svg.addEventListener("pointermove", (e) => {
+window.addEventListener("pointermove", (e) => {
   if (!drag) return;
+  if (Number.isInteger(drag.wireIndex)) {
+    if (
+      !drag.moved &&
+      Math.hypot(e.clientX - drag.startX, e.clientY - drag.startY) >= 8
+    )
+      drag.moved = true;
+    if (drag.moved) $("status").textContent = "Release to remove this wire.";
+    return;
+  }
   const p = pt(e),
     a = pos(drag.id),
     tmp = $("tmp");
@@ -798,6 +822,20 @@ window.addEventListener("pointerup", (e) => {
     pressedButton = false;
     state.btn = false;
     render();
+  }
+  if (drag && Number.isInteger(drag.wireIndex)) {
+    const d = drag;
+    drag = null;
+    if (d.moved) {
+      wires.splice(d.wireIndex, 1);
+      sel = null;
+      skipWireClick = true;
+      window.setTimeout(() => {
+        skipWireClick = false;
+      }, 0);
+      update();
+    }
+    return;
   }
   if (!drag) return;
   const d = drag;
@@ -819,6 +857,10 @@ window.addEventListener("pointerup", (e) => {
 svg.addEventListener("click", (e) => {
   const w = e.target.closest("[data-w]");
   if (w) {
+    if (skipWireClick) {
+      skipWireClick = false;
+      return;
+    }
     wires.splice(+w.dataset.w, 1);
     sel = null;
     update();
@@ -826,7 +868,13 @@ svg.addEventListener("click", (e) => {
   }
   const g = e.target.closest("[data-tog]");
   if (g && g.dataset.tog === "btn") return;
-  if (g && (done || ACTS[cur].kind === "sandbox")) {
+  const kind = ACTS[cur].kind;
+  if (
+    g &&
+    (done ||
+      kind === "sandbox" ||
+      (kind === "fault" && !shorted()))
+  ) {
     state[g.dataset.tog] = !state[g.dataset.tog];
     render();
   } else if (g && !done && !shorted()) {
@@ -884,7 +932,10 @@ $("undo").onclick = () => {
   sel = null;
   update();
 };
-$("reset").onclick = () => load(cur, true);
+$("reset").onclick = () => {
+  solved.delete(cur);
+  load(cur, true);
+};
 $("guide").onclick = () => {
   showGuide = !showGuide;
   render();
@@ -974,11 +1025,7 @@ ACTS.forEach((a, i) => {
   }
 });
 $("start").onclick = openMenu;
-$("activitiesLink").onclick = openMenu;
-$("exploreActivities").onclick = openMenu;
 $("trySimulator").onclick = () => openApp(0);
-$("homeSandboxOpen").onclick = openSandbox;
-$("homeTutorialOpen").onclick = startTutorial;
 $("resume").onclick = () => openApp(cur);
 $("menuBtn").onclick = openMenu;
 $("homeBtn").onclick = () => show("home", "homeTitle");

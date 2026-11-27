@@ -15,7 +15,6 @@
   </a>
   <nav class="site-nav" aria-label="Main navigation">
     <a class="active" href="#home">Home</a>
-    <button id="activitiesLink" type="button">Activities</button>
     <a href="#howItWorks">How it works</a>
     <a href="#about">About</a>
   </nav>
@@ -28,7 +27,6 @@
         <h1 id="homeTitle" tabindex="-1">Build circuits.<br><span>Understand wiring.</span></h1>
         <p class="hero-lede">Practice basic electrical wiring in a safe, interactive virtual workspace.</p>
         <div class="hero-actions">
-          <button id="exploreActivities" type="button">Explore Activities <span aria-hidden="true">→</span></button>
           <button id="trySimulator" class="outline-cta" type="button"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m8 5 12 7-12 7z"/></svg>Try the Simulator</button>
         </div>
         <div class="hero-highlights" aria-label="CircuitSim features">
@@ -59,52 +57,57 @@
   <section id="activities" class="activity-section section-inner">
     <div class="section-heading"><p class="eyebrow light-eyebrow">Practice makes progress</p><h2>Choose your next circuit</h2><p>Start with the basics, then explore more complex wiring.</p></div>
     <ul id="feat"></ul>
-    <div class="home-extra-actions"><button id="homeSandboxOpen" class="secondary" type="button">Or explore the free-build sandbox →</button><button id="homeTutorialOpen" class="secondary" type="button">Start the beginner tutorial</button></div>
   </section>
   <footer id="about" class="site-footer"><div class="footer-inner"><strong>CircuitSim</strong><span>A hands-on way to learn basic circuit concepts.</span><span class="footer-safety">A simplified learning model, not instructions for real electrical work.</span></div></footer>
 </main>
 <div id="menu" hidden>
-<header><button id="homeBtn">‹ Home</button></header>
+<header class="menu-header">
+  <button id="homeBtn" type="button">‹ Home</button>
+  <div class="menu-header-actions">
+    <button id="sandboxOpen" class="secondary" type="button">Open free-build sandbox</button>
+    <button id="tutorialOpen" class="secondary" type="button">Start the beginner tutorial</button>
+  </div>
+</header>
 <main>
   <h1 id="menuTitle" tabindex="-1">Choose an activity</h1>
   <p id="progress" aria-live="polite"></p>
   <button id="resume" hidden>Continue where you left off</button>
-  <section class="card progress-card" aria-labelledby="progressTitle"><h2 id="progressTitle">Your progress</h2><p id="progressDetail"></p><button id="clearProgress" type="button">Reset saved progress</button></section>
-  <button id="sandboxOpen" class="secondary" type="button">Open free-build sandbox</button>
-  <button id="tutorialOpen" class="secondary" type="button">Start the beginner tutorial</button>
   <ul id="list"></ul>
+  <section class="card progress-card" aria-labelledby="progressTitle"><h2 id="progressTitle">Your progress</h2><p id="progressDetail"></p><button id="clearProgress" type="button">Reset saved progress</button></section>
 </main>
 </div>
 <div id="app" hidden>
 <header>
   <button id="menuBtn">‹ Activities</button>
-  <h1 id="appTitle" tabindex="-1">CircuitSim</h1>
+  <h1 id="appTitle" tabindex="-1"><svg class="sim-brand-mark" viewBox="0 0 28 28" aria-hidden="true"><path d="M1 14h6l3-7 5 14 4-10 3 3h5"/></svg><span>CircuitSim</span></h1>
 </header>
 <main>
   <nav id="tabs" aria-label="Wiring activities"></nav>
   <div class="work">
     <section class="card info">
-      <div class="head"><h2 id="title"></h2><button id="defBtn" aria-haspopup="dialog">Definition</button></div>
+      <div class="head"><h2 id="title"></h2><button id="defBtn" aria-haspopup="dialog">Info</button></div>
       <p id="goal"></p>
       <p id="explanation" class="explanation" aria-live="polite"></p>
-      <details id="how"><summary>Steps and tip</summary>
+      <details id="how"><summary>Steps and tips</summary>
         <ol id="steps"></ol>
         <p id="tip"></p>
-        <p id="interactionHelp">How to wire: drag from one terminal (circle) to another, or tap one then the other. Tap a wire to remove it. When the circuit is complete, tap the switch or breaker to turn it on. On a keyboard, use Tab and Enter.</p>
+        <p id="interactionHelp">How to wire: drag from one terminal (circle) to another, or tap one then the other. Tap or drag a wire to remove it. When the circuit is complete, tap the switch or breaker to turn it on. On a keyboard, use Tab and Enter.</p>
         <p>The steps show one way to wire it. The simulator accepts circuits that meet the activity goal. This is a learning model, not a guide for real electrical installations.</p>
       </details>
     </section>
-    <div id="stage"><svg id="svg" viewBox="0 0 360 400" role="group" aria-label="Wiring board"></svg></div>
-    <div class="bar">
-      <div id="status" aria-live="polite"></div>
-      <div class="tools">
-        <button id="undo">Undo wire</button>
-        <button id="reset">Reset</button>
-        <button id="guide">Show guide</button>
-        <button id="explain">Explain circuit</button>
-        <button id="next" hidden>Next ›</button>
+    <section class="simulator-panel" aria-label="Circuit simulator">
+      <div id="stage"><svg id="svg" viewBox="0 0 360 400" role="group" aria-label="Wiring board"></svg></div>
+      <div class="bar">
+        <div id="status" aria-live="polite"></div>
+        <div class="tools">
+          <button id="undo" type="button"><svg class="tools-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 14 4 9l5-5M4 9h9a6 6 0 0 1 0 12h-2"/></svg>Undo wire</button>
+          <button id="reset" type="button"><svg class="tools-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 8V4m0 0h4M4 4l4 4m12 8v4m0 0h-4m4 0-4-4M7 17a7 7 0 0 0 12-4M17 7A7 7 0 0 0 5 11"/></svg>Reset</button>
+          <button id="guide" type="button"><svg class="tools-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5.5A2.5 2.5 0 0 1 6.5 3H20v17H6.5A2.5 2.5 0 0 0 4 22zM4 5.5v14"/></svg>Show guide</button>
+          <button id="explain" type="button"><svg class="tools-icon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 11v5m0-9h.01"/></svg>Explain circuit</button>
+          <button id="next" type="button" hidden>Next ›</button>
+        </div>
       </div>
-    </div>
+    </section>
   </div>
 </main>
 </div>

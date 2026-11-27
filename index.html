@@ -96,7 +96,23 @@
       </details>
     </section>
     <section class="simulator-panel" aria-label="Circuit simulator">
-      <div id="stage"><svg id="svg" viewBox="0 0 360 400" role="group" aria-label="Wiring board"></svg></div>
+      <div class="view-switch" role="group" aria-label="Circuit model view">
+        <button id="view2D" type="button" aria-pressed="true">2D View</button>
+        <button id="view3D" type="button" aria-pressed="false">3D View</button>
+      </div>
+      <p id="threeMessage" class="three-message" role="status" aria-live="polite" hidden></p>
+      <div id="stage">
+        <svg id="svg" viewBox="0 0 360 400" role="group" aria-label="Wiring board"></svg>
+        <canvas id="threeCanvas" role="img" aria-hidden="true"></canvas>
+        <div id="threeControls" class="three-controls" hidden>
+          <span>Click switch/breaker: toggle · Drag terminals: connect · Drag wire: remove · Drag elsewhere: rotate · Scroll/buttons: zoom</span>
+          <div class="three-camera-buttons" role="group" aria-label="3D camera controls">
+            <button id="zoomOut3D" type="button" aria-label="Zoom out">−</button>
+            <button id="zoomIn3D" type="button" aria-label="Zoom in">+</button>
+            <button id="reset3DView" type="button">Reset view</button>
+          </div>
+        </div>
+      </div>
       <div class="bar">
         <div id="status" aria-live="polite"></div>
         <div class="tools">
@@ -127,5 +143,6 @@
   </div>
 </dialog>
 <script src="script.js"></script>
+
 </body>
 </html>

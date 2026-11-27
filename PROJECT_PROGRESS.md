@@ -19,7 +19,7 @@
 
 - **Project name:** CircuitSim
 - **Project purpose:** A browser-based interactive introduction to basic circuit wiring.
-- **Main technologies:** HTML, CSS, and JavaScript; no build step is documented.
+- **Main technologies:** HTML, CSS, and JavaScript; Three.js is loaded on demand for the optional 3D view. No build step is documented.
 - **Current status:** In Progress
 - **Last updated:** 2026-11-27
 
@@ -27,8 +27,8 @@
 
 Write a short, factual summary of where the project stands.
 
-- **Working features:** The source includes seven wiring activities, saved progress, a tutorial, circuit feedback, and a free-build sandbox; these have not been browser-verified in this task.
-- **Partially working features:** The landing page, activity menu, and wiring app share the dark electrical-lab theme. Landing-page entry points and the simulator layout were browser-checked at desktop and mobile widths. Fault-finding reset clears its completion state, and its switch can be tested while troubleshooting; broader circuit-building and progression flows still need testing.
+- **Working features:** The source includes seven wiring activities, saved progress, a tutorial, circuit feedback, and a free-build sandbox. The optional 3D view renders all activities and stays synchronized with live wires and switch state; it supports terminal-to-terminal wire dragging, wire removal, and direct switch/breaker toggling with an animated lever. The 2D simulator remains the default.
+- **Partially working features:** The landing page, activity menu, and wiring app share the dark electrical-lab theme. Landing-page entry points and simulator layouts were browser-checked at desktop and mobile widths. Fault-finding reset clears its completion state, and its switch can be tested while troubleshooting; broader circuit-building and progression flows still need testing.
 - **Features not started:** Not yet documented
 
 ## Feature Tracker
@@ -37,6 +37,7 @@ Write a short, factual summary of where the project stands.
 |---|---|---|
 | Landing page redesign | Needs testing | Dark-mode reference applied; duplicate activity-menu, sandbox, and tutorial shortcuts were removed from the landing page. Desktop and mobile layouts were checked. |
 | Wiring activities and learning tools | Needs testing | Simulator redesign is browser-checked at desktop and mobile widths. The sandbox hides Show guide and Explain circuit while keeping Undo and Reset; guided activities retain all controls. Wires can be removed by dragging or keyboard activation, and terminal-to-terminal dragging still connects wires. Broader circuit-building and progression flows remain untested. |
+| Toggleable 3D activity views | Needs testing | Three.js loads only when selected. Reusable 3D geometry covers the source, battery, switches, breaker, lamps, push button, and outlet; only live wires are drawn. Camera rotation/zoom, mobile sizing, and 2D fallback were browser-checked. Terminal/wire dragging and clickable, animated switches/breakers are implemented; browser verification is still needed. |
 
 Use these status labels consistently:
 - `Not started`
@@ -48,6 +49,30 @@ Use these status labels consistently:
 ## Recent Work
 
 Add the latest completed task first. For each task, include:
+
+### [2026-11-27] - Animate 3D switch toggles
+
+- **Request:** Add an animation when toggling switches in 3D if none exists.
+- **Work completed:** 3D switch rockers and breaker levers can now be clicked and animate smoothly to the updated circuit state. Their indicator positions also move with the rocker. Reused the existing toggle rules so incomplete, fault-finding, and sandbox activities behave consistently; dragging a switch still rotates the camera.
+- **Files changed:** `index.html`, `script.js`, `PROJECT_PROGRESS.md`.
+- **Verification:** `node --check script.js`, `git diff --check`, and focused Node checks for the 260ms tween, direct switch-click handling, and camera drag behavior passed. Browser verification could not run because the Playwright browser service failed to initialize in the sandbox.
+- **Remaining work:** Verify the visual switch animation and state synchronization in a browser.
+
+### [2026-11-27] - Add 3D wire dragging
+
+- **Request:** Let users add and remove wires by dragging in the 3D circuit view.
+- **Work completed:** 3D terminal drags now preview and create connections in the shared `wires` state; dragging an existing wire removes it. Empty-space and component drags still orbit the camera, and the 3D helper text explains the gestures.
+- **Files changed:** `index.html`, `script.js`, `style.css`, `PROJECT_PROGRESS.md`.
+- **Verification:** `node --check script.js` and `git diff --check` passed. Browser interaction testing could not run because the Playwright browser service failed to initialize in the sandbox.
+- **Remaining work:** Verify connecting and removing wires in 3D, synchronization after switching back to 2D, and camera rotation/zoom in a browser.
+
+### [2026-11-27] - Add synchronized 3D activity views
+
+- **Request:** Add optional 3D circuit models for all activities, synchronized with the existing simulator and styled to match the landing-page hero.
+- **Work completed:** Added a 2D/3D mode selector with 2D as the default. Three.js now loads on demand; reusable 3D geometry models the available component types on a dark, cyan-edged circuit board with soft lighting and shadows. The 3D scene uses the activity's actual components and current `wires` array, so faulty, incomplete, and repaired circuits are represented accurately. Added pointer rotation, wheel and button zoom, camera reset, responsive resizing, and a clear 2D fallback when WebGL is unavailable. Rendering is event-driven rather than a continuous animation loop.
+- **Files changed:** `index.html`, `script.js`, `style.css`, `PROJECT_PROGRESS.md`.
+- **Verification:** Browser-checked lazy loading and 2D default; rendered all seven activities and the sandbox; confirmed a completed series circuit draws four live wires and shows both lit lamps; confirmed fault repair updates the 3D wire paths. Camera rotation/zoom worked, the 390px mobile layout had no horizontal overflow and resized when reopening the simulator, and a simulated WebGL failure left 2D wiring usable. No unexpected browser errors. `node --check script.js` and `git diff --check` passed.
+- **Remaining work:** Check on other browsers and lower-powered devices; broader simulator progression flows remain untested.
 
 ### [2026-11-27] - Remove connected wires by dragging
 
@@ -168,6 +193,14 @@ Add the latest completed task first. For each task, include:
 - **Files changed:** `index.html`, `style.css`, `PROJECT_PROGRESS.md`.
 - **Verification:** Static checks passed for unique element IDs, in-page anchor targets, landing-page button handlers, and JavaScript syntax. Browser appearance and responsive behavior were not tested. The deployed URL returned HTTP 200 before the changes; this does not verify the local redesign.
 - **Remaining work:** Check the desktop and mobile appearance and click each navigation and call-to-action link in a browser.
+
+### [2026-11-27] - Create initial Three.js 3D prototype
+
+- **Request:** Make circuit models fully 3D using Three.js with simple colored shapes, starting as a parallel view alongside the existing SVG renderer.
+- **Work completed:** Added Three.js CDN (v0.160.0) to `index.html` with canvas inside `#stage` (same container as SVG). Added `init3D()`, `animate3D()`, `createComponent3D()`, `createWire3D()`, `clear3D()`, `render3D()`, and `toggle3DView()` functions to `script.js`. Components render as rounded BoxGeometry with cyan edge rims, SphereGeometry terminals, and lamps have glowing bulb spheres with halo when on. Wires render as curved CatmullRomCurve3 lines that glow yellow when circuit is on. Three-point lighting setup (cyan key, warm fill, white rim) for pleasing shading. Camera at angled position for depth perception. Color palette matches hero section (cyan #00e5ff, navy #17365a, dark card #0b1729, yellow glow #ffbe32). Added "3D View ↗" toggle button in the app header. 3D view updates automatically on circuit changes via `update()`. Canvas and SVG both positioned absolutely inside `#stage`; toggle swaps z-index to show/hide each. Camera and renderer sized to `#stage` dimensions.
+- **Files changed:** `index.html`, `script.js`, `PROJECT_PROGRESS.md`.
+- **Verification:** The initial prototype loaded and the toggle changed the visible view, but it was not tested with live circuit interaction. It was superseded by the synchronized implementation recorded at the top of Recent Work.
+- **Remaining work:** None for the prototype.
 
 ### [2026-11-27] - Redesign CircuitSim landing page
 

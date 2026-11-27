@@ -356,6 +356,906 @@ let cur = 0,
   snapshots = {},
   started = false,
   tutorialStep = 0;
+const THREE_MODULE_URL =
+  "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js";
+const THREE_CAMERA_HOME = { theta: -0.72, phi: 0.67, radius: 690 };
+let threeScene = null;
+let threeCamera = null;
+let threeRenderer = null;
+let threeModel = null;
+let threeLoadPromise = null;
+let threeResizeObserver = null;
+let threeRenderFrame = 0;
+let threeDrag = null;
+let threeRaycaster = null;
+let threeTerminalHitAreas = [];
+let threeWireMeshes = [];
+let threeSwitchMeshes = [];
+let threePreviewWire = null;
+let threeSwitchMotions = [];
+let threeSwitchAnimationFrame = 0;
+let threeRenderedState = null;
+let threeRenderedActivity = -1;
+let threeCameraState = { ...THREE_CAMERA_HOME };
+let view3D = false;
+
+function loadThreeLibrary() {
+  if (window.THREE) return Promise.resolve(window.THREE);
+  if (threeLoadPromise) return threeLoadPromise;
+
+  // Keep the 2D simulator lightweight until the user asks for 3D.
+  threeLoadPromise = import(THREE_MODULE_URL)
+    .then((library) => {
+      window.THREE = library;
+      return library;
+    })
+    .catch((error) => {
+      threeLoadPromise = null;
+      throw error;
+    });
+
+  return threeLoadPromise;
+}
+
+function setThreeMessage(message) {
+  const messageElement = $("threeMessage");
+  messageElement.textContent = message;
+  messageElement.hidden = !message;
+}
+
+function updateViewControls() {
+  $("stage").classList.toggle("is-3d", view3D);
+  $("view2D").setAttribute("aria-pressed", String(!view3D));
+  $("view3D").setAttribute("aria-pressed", String(view3D));
+  $("threeControls").hidden = !view3D;
+  $("svg").inert = view3D;
+  $("svg").setAttribute("aria-hidden", String(view3D));
+  $("threeCanvas").setAttribute("aria-hidden", String(!view3D));
+  $("threeCanvas").setAttribute(
+    "aria-label",
+    `3D model of ${ACTS[cur].title}. Click a switch or breaker to toggle it, drag between terminals to connect wires, drag a wire to remove it, or drag elsewhere to rotate.`,
+  );
+}
+
+function setCameraPosition() {
+  if (!threeCamera) return;
+  const { theta, phi, radius } = threeCameraState;
+  const sinPhi = Math.sin(phi);
+  threeCamera.position.set(
+    radius * sinPhi * Math.cos(theta),
+    radius * sinPhi * Math.sin(theta),
+    radius * Math.cos(phi),
+  );
+  threeCamera.up.set(0, 0, 1);
+  threeCamera.lookAt(0, 0, 0);
+  requestThreeDraw();
+}
+
+function init3D() {
+  const T = window.THREE;
+  const canvas = $("threeCanvas");
+  const stage = $("stage");
+  if (!T || !canvas || !stage) {
+    throw new Error("The 3D canvas or Three.js library is unavailable.");
+  }
+
+  const bounds = stage.getBoundingClientRect();
+  if (!bounds.width || !bounds.height) {
+    throw new Error("The 3D canvas does not have a visible size.");
+  }
+
+  threeScene = new T.Scene();
+  threeScene.background = new T.Color("#071426");
+  threeCamera = new T.PerspectiveCamera(
+    42,
+    bounds.width / bounds.height,
+    1,
+    1800,
+  );
+  threeCamera.up.set(0, 0, 1);
+  threeModel = new T.Group();
+  threeScene.add(threeModel);
+  threeRaycaster = new T.Raycaster();
+
+  threeRenderer = new T.WebGLRenderer({
+    canvas,
+    antialias: true,
+    powerPreference: "low-power",
+  });
+  threeRenderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 1.5));
+  threeRenderer.setSize(bounds.width, bounds.height, false);
+  threeRenderer.outputColorSpace = T.SRGBColorSpace;
+  threeRenderer.toneMapping = T.ACESFilmicToneMapping;
+  threeRenderer.toneMappingExposure = 1.1;
+  threeRenderer.shadowMap.enabled = true;
+  threeRenderer.shadowMap.type = T.PCFSoftShadowMap;
+
+  threeScene.add(new T.AmbientLight(0xc8e3ff, 1.5));
+
+  const keyLight = new T.DirectionalLight(0x9beaff, 2.2);
+  keyLight.position.set(-180, -220, 360);
+  keyLight.castShadow = true;
+  threeScene.add(keyLight);
+
+  const warmLight = new T.DirectionalLight(0xffb84a, 1.4);
+  warmLight.position.set(180, 90, 260);
+  threeScene.add(warmLight);
+
+  const rimLight = new T.PointLight(0x00caff, 65, 520);
+  rimLight.position.set(-10, 170, 140);
+  threeScene.add(rimLight);
+
+  threeCameraState = { ...THREE_CAMERA_HOME };
+  setCameraPosition();
+  setupThreeControls(canvas);
+
+  if (window.ResizeObserver) {
+    threeResizeObserver = new ResizeObserver(resize3D);
+    threeResizeObserver.observe(stage);
+  }
+  window.addEventListener("resize", resize3D);
+}
+
+function resize3D() {
+  if (!threeCamera || !threeRenderer) return;
+  const bounds = $("stage").getBoundingClientRect();
+  if (!bounds.width || !bounds.height) return;
+  threeCamera.aspect = bounds.width / bounds.height;
+  threeCamera.updateProjectionMatrix();
+  threeRenderer.setSize(bounds.width, bounds.height, false);
+  requestThreeDraw();
+}
+
+function setupThreeControls(canvas) {
+  canvas.addEventListener("pointerdown", (event) => {
+    if (!view3D || event.button !== 0 || !threeCamera || !threeRaycaster) return;
+    let mode = "camera";
+    let terminalId = null;
+    let wireIndex = null;
+    let toggleId = null;
+
+    terminalId = terminalAt3D(event, canvas);
+    if (terminalId) {
+      mode = "connect";
+    } else {
+      wireIndex = wireAt3D(event, canvas);
+      if (Number.isInteger(wireIndex)) mode = "remove";
+      else {
+        toggleId = switchAt3D(event, canvas);
+        if (toggleId) mode = "switch";
+      }
+    }
+
+    threeDrag = {
+      pointerId: event.pointerId,
+      mode,
+      x: event.clientX,
+      y: event.clientY,
+      terminalId,
+      wireIndex,
+      toggleId,
+    };
+    if (mode === "connect") {
+      canvas.style.cursor = "crosshair";
+      createPreviewWire3D(pos3D(terminalId));
+    } else if (mode === "remove") {
+      canvas.style.cursor = "pointer";
+    } else if (mode === "switch") {
+      canvas.style.cursor = "pointer";
+    }
+    canvas.setPointerCapture(event.pointerId);
+  });
+
+  canvas.addEventListener("pointermove", (event) => {
+    if (!view3D || !threeDrag || threeDrag.pointerId !== event.pointerId) return;
+    if (
+      threeDrag.mode === "switch" &&
+      Math.hypot(event.clientX - threeDrag.x, event.clientY - threeDrag.y) >= 7
+    ) {
+      threeDrag.mode = "camera";
+      canvas.style.cursor = "grabbing";
+    }
+    if (threeDrag.mode === "camera") {
+      const dx = event.clientX - threeDrag.x;
+      const dy = event.clientY - threeDrag.y;
+      threeDrag.x = event.clientX;
+      threeDrag.y = event.clientY;
+      threeCameraState.theta -= dx * 0.008;
+      threeCameraState.phi = Math.max(
+        0.2,
+        Math.min(1.42, threeCameraState.phi + dy * 0.006),
+      );
+      setCameraPosition();
+    } else if (threeDrag.mode === "connect") {
+      const targetId = terminalAt3D(event, canvas);
+      const end = targetId
+        ? pos3D(targetId)
+        : pointerPoint3D(event, canvas);
+      if (end) updatePreviewWire3D(end);
+    }
+  });
+
+  canvas.addEventListener("pointerup", (event) => {
+    if (!threeDrag || threeDrag.pointerId !== event.pointerId) return;
+    const drag = threeDrag;
+    threeDrag = null;
+    canvas.style.cursor = "";
+
+    if (drag.mode === "connect") {
+      const targetId = terminalAt3D(event, canvas);
+      clearPreviewWire3D();
+      if (targetId && targetId !== drag.terminalId) {
+        const previousCount = wires.length;
+        addWire(drag.terminalId, targetId);
+        if (wires.length !== previousCount) {
+          sel = null;
+          update();
+          return;
+        }
+      }
+      requestThreeDraw();
+    } else if (drag.mode === "switch") {
+      toggleCircuitSwitch(drag.toggleId);
+    } else if (
+      drag.mode === "remove" &&
+      Number.isInteger(drag.wireIndex) &&
+      drag.wireIndex >= 0 &&
+      drag.wireIndex < wires.length
+    ) {
+      wires.splice(drag.wireIndex, 1);
+      sel = null;
+      update();
+    }
+  });
+
+  canvas.addEventListener("pointercancel", (event) => {
+    if (!threeDrag || threeDrag.pointerId !== event.pointerId) return;
+    if (threeDrag.mode === "connect") clearPreviewWire3D();
+    threeDrag = null;
+    canvas.style.cursor = "";
+    requestThreeDraw();
+  });
+  canvas.addEventListener("wheel", (event) => {
+    if (!view3D) return;
+    event.preventDefault();
+    zoom3D(event.deltaY < 0 ? 0.9 : 1.1);
+  }, { passive: false });
+}
+
+function setThreePointerRay(event, canvas) {
+  if (!threeRaycaster || !threeCamera) return false;
+  const bounds = canvas.getBoundingClientRect();
+  if (!bounds.width || !bounds.height) return false;
+  const pointer = new window.THREE.Vector2(
+    ((event.clientX - bounds.left) / bounds.width) * 2 - 1,
+    -((event.clientY - bounds.top) / bounds.height) * 2 + 1,
+  );
+  threeRaycaster.setFromCamera(pointer, threeCamera);
+  return true;
+}
+
+function terminalAt3D(event, canvas) {
+  if (!setThreePointerRay(event, canvas)) return null;
+  const hit = threeRaycaster.intersectObjects(threeTerminalHitAreas, false)[0];
+  return hit ? hit.object.userData.terminalId : null;
+}
+
+function wireAt3D(event, canvas) {
+  if (!setThreePointerRay(event, canvas)) return null;
+  const hit = threeRaycaster.intersectObjects(threeWireMeshes, false)[0];
+  return hit ? hit.object.userData.wireIndex : null;
+}
+
+function switchAt3D(event, canvas) {
+  if (!setThreePointerRay(event, canvas)) return null;
+  const hit = threeRaycaster.intersectObjects(threeSwitchMeshes, false)[0];
+  return hit ? hit.object.userData.toggleId : null;
+}
+
+function pointerPoint3D(event, canvas) {
+  if (!setThreePointerRay(event, canvas)) return null;
+  const T = window.THREE;
+  const boardPlane = new T.Plane(new T.Vector3(0, 0, 1), -26);
+  return threeRaycaster.ray.intersectPlane(boardPlane, new T.Vector3());
+}
+
+function createPreviewWire3D(start) {
+  const T = window.THREE;
+  const initialEnd = start.clone().add(new T.Vector3(0, 0, 1));
+  const curve = new T.CatmullRomCurve3([start, initialEnd]);
+  threePreviewWire = new T.Mesh(
+    new T.TubeGeometry(curve, 20, 1.8, 8, false),
+    material3D("#72eaff", {
+      roughness: 0.24,
+      emissive: "#00a9d2",
+      emissiveIntensity: 0.8,
+    }),
+  );
+  threePreviewWire.frustumCulled = false;
+  threeModel.add(threePreviewWire);
+  requestThreeDraw();
+}
+
+function updatePreviewWire3D(end) {
+  if (!threePreviewWire || !threeDrag || !threeDrag.terminalId) return;
+  const T = window.THREE;
+  const start = pos3D(threeDrag.terminalId);
+  const arc = new T.Vector3(
+    (start.x + end.x) / 2,
+    (start.y + end.y) / 2,
+    34 + Math.min(10, Math.abs(start.x - end.x) * 0.025),
+  );
+  const curve = new T.CatmullRomCurve3(
+    [start, start.clone().lerp(arc, 0.55), arc, end.clone().lerp(arc, 0.55), end],
+    false,
+    "centripetal",
+  );
+  const geometry = new T.TubeGeometry(curve, 20, 1.8, 8, false);
+  threePreviewWire.geometry.dispose();
+  threePreviewWire.geometry = geometry;
+  requestThreeDraw();
+}
+
+function clearPreviewWire3D() {
+  if (!threePreviewWire) return;
+  threeModel.remove(threePreviewWire);
+  disposeThreeObject(threePreviewWire);
+  threePreviewWire = null;
+}
+
+function zoom3D(factor) {
+  threeCameraState.radius = Math.max(
+    440,
+    Math.min(1100, threeCameraState.radius * factor),
+  );
+  setCameraPosition();
+}
+
+function requestThreeDraw() {
+  if (!view3D || !threeRenderer || threeRenderFrame) return;
+  threeRenderFrame = requestAnimationFrame(() => {
+    threeRenderFrame = 0;
+    if (view3D && threeRenderer) threeRenderer.render(threeScene, threeCamera);
+  });
+}
+
+function material3D(color, options = {}) {
+  return new window.THREE.MeshStandardMaterial({
+    color,
+    roughness: 0.38,
+    metalness: 0.22,
+    ...options,
+  });
+}
+
+function addBox3D(group, size, position, color, options = {}) {
+  const T = window.THREE;
+  const mesh = new T.Mesh(
+    new T.BoxGeometry(size[0], size[1], size[2]),
+    material3D(color, options),
+  );
+  mesh.position.set(position[0], position[1], position[2]);
+  mesh.castShadow = true;
+  mesh.receiveShadow = true;
+  group.add(mesh);
+  return mesh;
+}
+
+function addCylinder3D(group, radiusTop, radiusBottom, height, position, color, options = {}) {
+  const T = window.THREE;
+  const mesh = new T.Mesh(
+    new T.CylinderGeometry(radiusTop, radiusBottom, height, 24),
+    material3D(color, options),
+  );
+  mesh.rotation.x = Math.PI / 2;
+  mesh.position.set(position[0], position[1], position[2]);
+  mesh.castShadow = true;
+  mesh.receiveShadow = true;
+  group.add(mesh);
+  return mesh;
+}
+
+function addLabel3D(group, text, position, size = [52, 11]) {
+  const T = window.THREE;
+  const label = document.createElement("canvas");
+  label.width = 512;
+  label.height = 112;
+  const context = label.getContext("2d");
+  context.fillStyle = "rgba(5, 17, 33, 0.88)";
+  context.beginPath();
+  if (context.roundRect) context.roundRect(6, 6, 500, 100, 26);
+  else context.rect(6, 6, 500, 100);
+  context.fill();
+  context.fillStyle = "#e7f8ff";
+  context.font = "700 54px system-ui, sans-serif";
+  context.textAlign = "center";
+  context.textBaseline = "middle";
+  context.fillText(text, 256, 57, 470);
+
+  const texture = new T.CanvasTexture(label);
+  texture.colorSpace = T.SRGBColorSpace;
+  const sprite = new T.Sprite(
+    new T.SpriteMaterial({ map: texture, transparent: true, depthWrite: false }),
+  );
+  sprite.position.set(position[0], position[1], position[2]);
+  sprite.scale.set(size[0], size[1], 1);
+  group.add(sprite);
+}
+
+function addBoard3D() {
+  const T = window.THREE;
+  const shape = new T.Shape();
+  const left = -106;
+  const right = 106;
+  const bottom = -180;
+  const top = 180;
+  const radius = 16;
+  shape.moveTo(left + radius, bottom);
+  shape.lineTo(right - radius, bottom);
+  shape.quadraticCurveTo(right, bottom, right, bottom + radius);
+  shape.lineTo(right, top - radius);
+  shape.quadraticCurveTo(right, top, right - radius, top);
+  shape.lineTo(left + radius, top);
+  shape.quadraticCurveTo(left, top, left, top - radius);
+  shape.lineTo(left, bottom + radius);
+  shape.quadraticCurveTo(left, bottom, left + radius, bottom);
+
+  const boardGeometry = new T.ExtrudeGeometry(shape, {
+    depth: 12,
+    bevelEnabled: true,
+    bevelSegments: 3,
+    steps: 1,
+    bevelSize: 2,
+    bevelThickness: 2,
+  });
+  const board = new T.Mesh(
+    boardGeometry,
+    material3D("#092653", { roughness: 0.3, metalness: 0.45 }),
+  );
+  board.position.z = -16;
+  board.receiveShadow = true;
+  threeModel.add(board);
+
+  const edge = new T.LineSegments(
+    new T.EdgesGeometry(boardGeometry),
+    new T.LineBasicMaterial({ color: 0x00cfff, transparent: true, opacity: 0.72 }),
+  );
+  edge.position.copy(board.position);
+  threeModel.add(edge);
+
+  const holes = [];
+  for (let x = -88; x <= 88; x += 22) {
+    for (let y = -154; y <= 154; y += 22) {
+      holes.push([x, y, -2.8]);
+    }
+  }
+  const holeGeometry = new T.CircleGeometry(2.2, 12);
+  const holeMaterial = material3D("#020a16", { roughness: 0.72, metalness: 0.1 });
+  const holeMeshes = new T.InstancedMesh(holeGeometry, holeMaterial, holes.length);
+  const matrix = new T.Matrix4();
+  holes.forEach(([x, y, z], index) => {
+    matrix.makeTranslation(x, y, z);
+    holeMeshes.setMatrixAt(index, matrix);
+  });
+  holeMeshes.instanceMatrix.needsUpdate = true;
+  threeModel.add(holeMeshes);
+}
+
+function addTerminal3D(group, componentId, terminal, color) {
+  const T = window.THREE;
+  const x = terminal.s === "l" ? -80 : 80;
+  const y = -terminal.dy;
+  addCylinder3D(group, 5.5, 7, 7, [x, y, 16.5], "#29394c");
+  addCylinder3D(group, 5.5, 5.5, 2, [x, y, 21], "#e1a735", {
+    color: "#e1a735",
+    metalness: 0.8,
+    roughness: 0.22,
+  });
+  const terminalMesh = new window.THREE.Mesh(
+    new window.THREE.SphereGeometry(4.5, 16, 12),
+    material3D(color, { metalness: 0.72, roughness: 0.2 }),
+  );
+  terminalMesh.position.set(x, y, 23);
+  terminalMesh.castShadow = true;
+  group.add(terminalMesh);
+
+  const hitArea = new T.Mesh(
+    new T.SphereGeometry(10, 12, 8),
+    new T.MeshBasicMaterial({
+      transparent: true,
+      opacity: 0,
+      colorWrite: false,
+      depthWrite: false,
+    }),
+  );
+  hitArea.position.copy(terminalMesh.position);
+  hitArea.userData.terminalId = `${componentId}.${terminal.n}`;
+  group.add(hitArea);
+  threeTerminalHitAreas.push(hitArea);
+}
+
+function setThreeSwitchTransform(object, transform, axis, from, to, animate) {
+  object[transform][axis] = animate ? from : to;
+  if (animate && from !== to) {
+    threeSwitchMotions.push({ object, transform, axis, from, to });
+  }
+}
+
+function createComponent3D(component, previousState) {
+  const T = window.THREE;
+  const group = new T.Group();
+  const height = component.h || 50;
+  const litNow = lit();
+  group.position.set(0, 200 - component.y, 0);
+  threeModel.add(group);
+
+  addBox3D(group, [144, height - 14, 10], [0, 0, 4], "#102b4b", {
+    roughness: 0.48,
+    metalness: 0.42,
+  });
+  addBox3D(group, [132, height - 21, 4], [0, 0, 11], "#0c1a2c");
+
+  if (component.type === "bat") {
+    addBox3D(group, [66, 34, 24], [0, 0, 24], "#d9e3f1", {
+      roughness: 0.3,
+      metalness: 0.28,
+    });
+    addBox3D(group, [42, 16, 2], [0, 2, 37], "#0a1830", {
+      emissive: "#003d5e",
+      emissiveIntensity: 0.4,
+    });
+    addLabel3D(group, "9V", [0, 2, 39], [27, 8]);
+  } else if (component.type === "src") {
+    addBox3D(group, [82, 46, 34], [0, 0, 29], "#d8e1ee", {
+      roughness: 0.32,
+      metalness: 0.24,
+    });
+    addBox3D(group, [51, 20, 2], [0, 5, 47], "#06142b", {
+      emissive: "#005577",
+      emissiveIntensity: 0.5,
+    });
+    addLabel3D(group, "5.0 V", [0, 5, 49], [34, 8]);
+    addCylinder3D(group, 6, 6, 3, [-20, -14, 48], "#ef594a", {
+      metalness: 0.7,
+    });
+    addCylinder3D(group, 6, 6, 3, [20, -14, 48], "#1d2735", {
+      metalness: 0.7,
+    });
+  } else if (component.type === "sw" || component.type === "sw3") {
+    const active = Boolean(state[component.id]);
+    const previousActive = previousState
+      ? Boolean(previousState[component.id])
+      : active;
+    const shouldAnimate =
+      previousState !== null &&
+      previousState !== undefined &&
+      previousActive !== active;
+    const switchHeight = component.type === "sw3" ? 56 : 30;
+    addBox3D(
+      group,
+      [66, switchHeight, 13],
+      [0, 0, 13],
+      "#cbd8e8",
+      { roughness: 0.3, metalness: 0.3 },
+    );
+    const rocker = addBox3D(
+      group,
+      [34, component.type === "sw3" ? 30 : 21, 12],
+      [0, 0, 25],
+      "#101a2a",
+      { roughness: 0.28, metalness: 0.52 },
+    );
+    const targetRotation = active ? 0.2 : -0.2;
+    const startRotation = previousActive ? 0.2 : -0.2;
+    setThreeSwitchTransform(
+      rocker,
+      "rotation",
+      "y",
+      startRotation,
+      targetRotation,
+      shouldAnimate,
+    );
+    rocker.userData.toggleId = component.id;
+    threeSwitchMeshes.push(rocker);
+    const indicator = addBox3D(group, [24, 3, 1], [0, 0, 31], "#f1b740", {
+      metalness: 0.7,
+      roughness: 0.24,
+    });
+    const targetIndicatorY = active ? -5 : 5;
+    const startIndicatorY = previousActive ? -5 : 5;
+    setThreeSwitchTransform(
+      indicator,
+      "position",
+      "y",
+      startIndicatorY,
+      targetIndicatorY,
+      shouldAnimate,
+    );
+  } else if (component.type === "brk") {
+    const active = Boolean(state[component.id]);
+    const previousActive = previousState
+      ? Boolean(previousState[component.id])
+      : active;
+    const shouldAnimate =
+      previousState !== null &&
+      previousState !== undefined &&
+      previousActive !== active;
+    addBox3D(group, [68, 36, 20], [0, 0, 17], "#dbe4ef", {
+      roughness: 0.32,
+      metalness: 0.28,
+    });
+    const lever = addBox3D(group, [18, 12, 20], [0, 0, 34], "#15243a", {
+      roughness: 0.3,
+      metalness: 0.42,
+    });
+    const targetRotation = active ? -0.28 : 0.28;
+    const startRotation = previousActive ? -0.28 : 0.28;
+    setThreeSwitchTransform(
+      lever,
+      "rotation",
+      "y",
+      startRotation,
+      targetRotation,
+      shouldAnimate,
+    );
+    lever.userData.toggleId = component.id;
+    threeSwitchMeshes.push(lever);
+    addBox3D(group, [13, 5, 2], [0, 0, 45], active ? "#4cd2a4" : "#ff9d24", {
+      emissive: active ? "#164b39" : "#502600",
+    });
+  } else if (component.type === "button") {
+    addBox3D(group, [58, 38, 17], [0, 0, 12], "#d1dce9", {
+      roughness: 0.32,
+      metalness: 0.3,
+    });
+    const pressed = !!state[component.id];
+    addCylinder3D(
+      group,
+      12,
+      14,
+      9,
+      [0, 0, pressed ? 24 : 28],
+      pressed ? "#b83342" : "#f25c62",
+      { roughness: 0.24, metalness: 0.25, emissive: "#3d1119", emissiveIntensity: 0.18 },
+    );
+    addCylinder3D(group, 7, 7, 2, [0, 0, pressed ? 29 : 33], "#ffbcc0");
+  } else if (component.type === "lamp") {
+    addCylinder3D(group, 18, 19, 12, [0, 0, 14], "#c9d6e5", {
+      roughness: 0.28,
+      metalness: 0.34,
+    });
+    addCylinder3D(group, 12, 15, 5, [0, 0, 22.5], "#d9a53b", {
+      metalness: 0.78,
+      roughness: 0.24,
+    });
+    addCylinder3D(group, 7, 7, 9, [0, 0, 29], "#9aa9bb", {
+      metalness: 0.54,
+      roughness: 0.28,
+    });
+    const bulbColor = litNow ? "#ffe39b" : "#66758a";
+    const bulb = new T.Mesh(
+      new T.SphereGeometry(12, 24, 18),
+      material3D(bulbColor, {
+        roughness: 0.14,
+        metalness: 0.04,
+        emissive: litNow ? "#ffae25" : "#101a2a",
+        emissiveIntensity: litNow ? 1.5 : 0.08,
+        transparent: true,
+        opacity: 0.94,
+      }),
+    );
+    bulb.position.set(0, 0, 42);
+    bulb.castShadow = true;
+    group.add(bulb);
+    if (litNow) {
+      const glow = new T.PointLight(0xffb83f, 18, 95);
+      glow.position.set(0, 0, 43);
+      group.add(glow);
+    }
+  } else if (component.type === "out") {
+    addBox3D(group, [76, 43, 13], [0, 0, 13], "#e0e6ef", {
+      roughness: 0.32,
+      metalness: 0.2,
+    });
+    [-1, 1].forEach((side) => {
+      addCylinder3D(group, 3.2, 3.2, 1.5, [side * 9, 3, 20.5], "#06101e");
+      addCylinder3D(group, 3.2, 3.2, 1.5, [side * 9, -5, 20.5], "#06101e");
+    });
+    addCylinder3D(group, 2.2, 2.2, 1.5, [0, -9, 20.5], "#06101e");
+    addCylinder3D(group, 2, 2, 1.5, [0, 13, 20.5], "#8795a7");
+  }
+
+  addLabel3D(group, component.name, [0, height / 2 + 7, 18], [62, 12]);
+  component.terms.forEach((terminal) => {
+    const color =
+      terminal.col === "#d32f2f"
+        ? "#ff5d4f"
+        : terminal.col === "#2563eb"
+          ? "#4a9eff"
+          : terminal.col === "#555"
+            ? "#313b49"
+            : "#f3bd55";
+    addTerminal3D(group, component.id, terminal, color);
+  });
+}
+
+function pos3D(id) {
+  const point = pos(id);
+  return new window.THREE.Vector3(
+    point.x - CX,
+    200 - point.y,
+    23,
+  );
+}
+
+function wireColor3D(id) {
+  const [componentId, terminalName] = id.split(".");
+  const terminal = comp(componentId).terms.find((item) => item.n === terminalName);
+  if (terminal.col === "#d32f2f") return 0xff5147;
+  if (terminal.col === "#2563eb") return 0x398dff;
+  if (terminal.col === "#555") return 0x252f3d;
+  return 0x31caff;
+}
+
+function createWire3D(a, b, isLit, wireIndex) {
+  const T = window.THREE;
+  const start = pos3D(a);
+  const end = pos3D(b);
+  const arc = new T.Vector3(
+    (start.x + end.x) / 2,
+    (start.y + end.y) / 2,
+    34 + Math.min(10, Math.abs(start.x - end.x) * 0.025),
+  );
+  const curve = new T.CatmullRomCurve3(
+    [start, start.clone().lerp(arc, 0.55), arc, end.clone().lerp(arc, 0.55), end],
+    false,
+    "centripetal",
+  );
+  const color = wireColor3D(a);
+  const wire = new T.Mesh(
+    new T.TubeGeometry(curve, 32, 2.2, 8, false),
+    material3D(color, {
+      roughness: 0.24,
+      metalness: 0.12,
+      emissive: isLit ? 0xffc247 : color,
+      emissiveIntensity: isLit ? 0.78 : 0.12,
+    }),
+  );
+  wire.castShadow = true;
+  wire.userData.wireIndex = wireIndex;
+  threeModel.add(wire);
+  threeWireMeshes.push(wire);
+
+  if (isLit) {
+    const halo = new T.Mesh(
+      new T.TubeGeometry(curve, 32, 4.2, 8, false),
+      new T.MeshBasicMaterial({
+        color: 0xffb83f,
+        transparent: true,
+        opacity: 0.18,
+        depthWrite: false,
+      }),
+    );
+    threeModel.add(halo);
+  }
+}
+
+function disposeThreeObject(object) {
+  object.traverse((child) => {
+    if (child.geometry) child.geometry.dispose();
+    if (!child.material) return;
+    const materials = Array.isArray(child.material)
+      ? child.material
+      : [child.material];
+    materials.forEach((material) => {
+      if (material.map) material.map.dispose();
+      material.dispose();
+    });
+  });
+}
+
+function clearThreeModel() {
+  while (threeModel.children.length) {
+    const child = threeModel.children[0];
+    threeModel.remove(child);
+    disposeThreeObject(child);
+  }
+  threeTerminalHitAreas = [];
+  threeWireMeshes = [];
+  threeSwitchMeshes = [];
+  threeSwitchMotions = [];
+  threePreviewWire = null;
+}
+
+function animateThreeSwitches() {
+  if (!threeSwitchMotions.length || !view3D || !threeRenderer) return;
+  const motions = threeSwitchMotions;
+  const duration = 260;
+  let startTime = null;
+
+  const animate = (time) => {
+    if (!view3D || !threeRenderer) {
+      threeSwitchAnimationFrame = 0;
+      return;
+    }
+    if (startTime === null) startTime = time;
+    const progress = Math.min((time - startTime) / duration, 1);
+    const eased = 1 - Math.pow(1 - progress, 3);
+    motions.forEach((motion) => {
+      motion.object[motion.transform][motion.axis] =
+        motion.from + (motion.to - motion.from) * eased;
+    });
+    threeRenderer.render(threeScene, threeCamera);
+
+    if (progress < 1) {
+      threeSwitchAnimationFrame = requestAnimationFrame(animate);
+    } else {
+      threeSwitchAnimationFrame = 0;
+      threeSwitchMotions = [];
+    }
+  };
+
+  threeSwitchAnimationFrame = requestAnimationFrame(animate);
+}
+
+function render3D() {
+  if (!view3D || !threeScene || !threeModel) return;
+
+  if (threeSwitchAnimationFrame) {
+    cancelAnimationFrame(threeSwitchAnimationFrame);
+    threeSwitchAnimationFrame = 0;
+  }
+  const previousState =
+    threeRenderedActivity === cur ? threeRenderedState : null;
+
+  try {
+    clearThreeModel();
+    addBoard3D();
+    ACTS[cur].comps.forEach((component) =>
+      createComponent3D(component, previousState),
+    );
+    // Draw only actual connections, not the activity's target wiring.
+    wires.forEach(([a, b], index) => createWire3D(a, b, lit(), index));
+    threeRenderedState = { ...state };
+    threeRenderedActivity = cur;
+    if (threeSwitchMotions.length) animateThreeSwitches();
+    else requestThreeDraw();
+  } catch (error) {
+    console.error("The 3D circuit model could not be updated:", error);
+    setThreeMessage("The 3D model could not update. Switch to 2D to continue.");
+  }
+}
+
+async function setViewMode(show3D) {
+  if (view3D === show3D && (!show3D || threeRenderer)) return;
+  view3D = show3D;
+  updateViewControls();
+
+  if (!show3D) {
+    if (threeSwitchAnimationFrame) {
+      cancelAnimationFrame(threeSwitchAnimationFrame);
+      threeSwitchAnimationFrame = 0;
+    }
+    setThreeMessage("");
+    return;
+  }
+
+  setThreeMessage("Loading the 3D circuit model…");
+  try {
+    await loadThreeLibrary();
+    if (!view3D) return;
+    if (!threeRenderer) init3D();
+    resize3D();
+    setThreeMessage("");
+    render3D();
+  } catch (error) {
+    console.error("The 3D view could not be started:", error);
+    view3D = false;
+    updateViewControls();
+    setThreeMessage("3D view is unavailable. The 2D simulator is still active.");
+  }
+}
+
 const $ = (id) => document.getElementById(id);
 const comp = (id) => ACTS[cur].comps.find((c) => c.id === id);
 function pos(id) {
@@ -721,6 +1621,7 @@ function render() {
   if (done && $("explanation"))
     $("explanation").textContent = explanationText();
   persist();
+  render3D();
 }
 function a_label(i) {
   return ACTS[i].title + (solved.has(i) ? ", completed" : "");
@@ -729,8 +1630,23 @@ function update() {
   done = check();
   render();
 }
+function toggleCircuitSwitch(id) {
+  const kind = ACTS[cur].kind;
+  if (
+    done ||
+    kind === "sandbox" ||
+    (kind === "fault" && !shorted())
+  ) {
+    state[id] = !state[id];
+    render();
+  } else if (!done && !shorted()) {
+    $("status").className = "bad";
+    $("status").textContent = "Finish the wiring first, then switch it on.";
+  }
+}
 function load(i, reset = false) {
   cur = i;
+  if (view3D) updateViewControls();
   const saved = !reset && snapshots[i];
   wires =
     saved && Array.isArray(saved.wires)
@@ -868,19 +1784,7 @@ svg.addEventListener("click", (e) => {
   }
   const g = e.target.closest("[data-tog]");
   if (g && g.dataset.tog === "btn") return;
-  const kind = ACTS[cur].kind;
-  if (
-    g &&
-    (done ||
-      kind === "sandbox" ||
-      (kind === "fault" && !shorted()))
-  ) {
-    state[g.dataset.tog] = !state[g.dataset.tog];
-    render();
-  } else if (g && !done && !shorted()) {
-    $("status").className = "bad";
-    $("status").textContent = "Finish the wiring first, then switch it on.";
-  }
+  if (g) toggleCircuitSwitch(g.dataset.tog);
 });
 svg.addEventListener("keydown", (e) => {
   if (e.key !== "Enter" && e.key !== " ") return;
@@ -988,6 +1892,10 @@ function openApp(i) {
   started = true;
   persist();
   show("app", "appTitle");
+  if (view3D) {
+    resize3D();
+    render3D();
+  }
 }
 function openMenu() {
   [...$("list").children].forEach((li, i) =>
@@ -1065,6 +1973,15 @@ $("tutorialClose").onclick = () => $("tutorial").close();
 $("tutorialOpen").onclick = startTutorial;
 $("sandboxOpen").onclick = openSandbox;
 $("clearProgress").onclick = clearProgress;
+$("view2D").onclick = () => setViewMode(false);
+$("view3D").onclick = () => setViewMode(true);
+$("zoomOut3D").onclick = () => zoom3D(1.15);
+$("zoomIn3D").onclick = () => zoom3D(0.87);
+$("reset3DView").onclick = () => {
+  threeCameraState = { ...THREE_CAMERA_HOME };
+  setCameraPosition();
+};
 restore();
 load(cur);
+updateViewControls();
 show("home");

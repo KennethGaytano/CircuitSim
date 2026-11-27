@@ -1427,6 +1427,7 @@ body {
   align-items: center;
   gap: 10px;
   margin-left: auto;
+  margin-right: auto;
   color: var(--cyan);
   font-size: 1.15rem;
   font-weight: 800;
@@ -1526,6 +1527,53 @@ body {
   box-shadow: 0 12px 30px rgba(0, 0, 0, 0.22);
 }
 
+#app .view-switch {
+  display: inline-flex;
+  gap: 4px;
+  margin: 16px 18px 0;
+  padding: 4px;
+  border: 1px solid #24415f;
+  border-radius: 12px;
+  background: #071426;
+}
+
+#app .view-switch button {
+  min-height: 40px;
+  padding: 7px 16px;
+  border: 1px solid transparent;
+  border-radius: 9px;
+  background: transparent;
+  color: #b7c5d5;
+  font: inherit;
+  font-size: 0.86rem;
+  font-weight: 650;
+  cursor: pointer;
+  transition:
+    background-color 180ms ease,
+    border-color 180ms ease,
+    color 180ms ease,
+    box-shadow 180ms ease;
+}
+
+#app .view-switch button[aria-pressed="true"] {
+  border-color: #087b9b;
+  background: linear-gradient(110deg, #00d9f5, #08a9fa);
+  color: #061a2b;
+  box-shadow: 0 0 16px rgba(0, 185, 255, 0.14);
+}
+
+#app .view-switch button:focus-visible,
+#app .three-camera-buttons button:focus-visible {
+  outline: 2px solid #67e9ff;
+  outline-offset: 2px;
+}
+
+#app .three-message {
+  margin: 8px 18px 0;
+  color: #ffd27a;
+  font-size: 0.84rem;
+}
+
 #app .card .head h2 {
   font-size: clamp(1.2rem, 1.7vw, 1.5rem);
   letter-spacing: -0.025em;
@@ -1588,11 +1636,12 @@ body {
 }
 
 #app #stage {
-  display: grid;
-  grid-area: auto;
+  position: relative;
+  display: block;
+  isolation: isolate;
+  overflow: hidden;
   min-height: 420px;
   margin: 0;
-  place-items: center;
   border: 0;
   border-radius: 0;
   background-color: #0a1727;
@@ -1602,9 +1651,102 @@ body {
 }
 
 #app #stage svg {
+  position: absolute;
+  inset: 0;
   width: 100%;
-  max-width: 380px;
-  height: auto;
+  max-width: none;
+  height: 100%;
+  margin: 0;
+  z-index: 1;
+  opacity: 1;
+  transition: opacity 220ms ease;
+}
+
+#app #threeCanvas {
+  position: absolute;
+  inset: 0;
+  display: block;
+  width: 100%;
+  height: 100%;
+  z-index: 0;
+  opacity: 0;
+  pointer-events: none;
+  touch-action: none;
+  cursor: grab;
+  transition: opacity 220ms ease;
+}
+
+#app #threeCanvas:active {
+  cursor: grabbing;
+}
+
+#app #stage.is-3d svg {
+  z-index: 0;
+  opacity: 0;
+  pointer-events: none;
+}
+
+#app #stage.is-3d #threeCanvas {
+  z-index: 1;
+  opacity: 1;
+  pointer-events: auto;
+}
+
+#app .three-controls {
+  position: absolute;
+  right: 12px;
+  bottom: 12px;
+  left: 12px;
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  pointer-events: none;
+}
+
+#app .three-controls > span,
+#app .three-camera-buttons {
+  padding: 6px 9px;
+  border: 1px solid rgba(75, 141, 181, 0.45);
+  border-radius: 10px;
+  background: rgba(5, 14, 27, 0.84);
+  color: #d3e2ef;
+  font-size: 0.76rem;
+  backdrop-filter: blur(8px);
+}
+
+#app .three-controls > span {
+  max-width: min(60%, 470px);
+  line-height: 1.35;
+}
+
+#app .three-camera-buttons {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  pointer-events: auto;
+}
+
+#app .three-camera-buttons button {
+  min-width: 34px;
+  min-height: 34px;
+  padding: 5px 9px;
+  border: 1px solid #245075;
+  border-radius: 7px;
+  background: #0b1c31;
+  color: #e9f8ff;
+  font: inherit;
+  font-size: 0.82rem;
+  cursor: pointer;
+}
+
+#app .three-camera-buttons button:hover {
+  border-color: var(--cyan);
+}
+
+#app .three-camera-buttons #reset3DView {
+  padding: 5px 10px;
 }
 
 #app .bar {
@@ -1692,8 +1834,8 @@ body {
     min-height: 360px;
   }
 
-  #app #stage svg {
-    max-width: 340px;
+  #app .view-switch {
+    margin: 12px 12px 0;
   }
 
   #app .bar {
@@ -1714,8 +1856,22 @@ body {
     min-height: 320px;
   }
 
-  #app #stage svg {
-    max-width: 290px;
+  #app .three-controls {
+    right: 8px;
+    bottom: 8px;
+    left: 8px;
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 6px;
+  }
+
+  #app .three-controls > span {
+    max-width: 100%;
+    font-size: 0.7rem;
+  }
+
+  #app .three-camera-buttons {
+    align-self: flex-end;
   }
 
   #app .tools {

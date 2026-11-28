@@ -2072,6 +2072,11 @@ window.addEventListener("pointercancel", () => {
   }
 });
 $("how").open = matchMedia("(min-width:52rem)").matches;
+
+// Update disclosure state on window resize
+window.addEventListener("resize", () => {
+  $("how").open = matchMedia("(min-width:52rem)").matches;
+});
 $("undo").onclick = () => {
   wires.pop();
   sel = null;

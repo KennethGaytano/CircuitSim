@@ -396,3 +396,47 @@ Do not turn suggestions into decisions unless the user approves them.
 - Fixed the expanded “Explore more activities” list: it now uses the same responsive grid, reset list styling, and card typography as the starter activities.
 - Explicitly set card text color, alignment, and inherited font; descriptions now begin on their own line in muted text.
 - Validated CSS brace balance and `git diff --check`.
+## Hero Section Layout Fix
+
+### [2026-11-28] - Fix hero column layout, spacing, and stat-row wrapping
+
+- **Request:** Fix the cramped hero copy column on narrow widths: stat labels wrapped into short lines, the stats row broke badly, elements felt stuck together, and the heading could overflow the column.
+- **Work completed:** Reworked only the landing-page hero layout, spacing, and text wrapping in style.css. Left-aligned the badge, heading, description, button, and stats row to the same edge; set the heading to clamp(2.2rem, 5vw, 2.4rem) with line-height: 1.12; limited the description to max-width: 40ch at line-height: 1.5; added consistent spacing (badge→heading 20px, heading→description 20px, description→button 30px, button→stats 36px); made the stats row a wrapping flex row with equal-height vertically centered items, a consistent icon↔text gap, consistent divider padding, and white-space: nowrap on label spans so "Free-Build" never splits; added a mobile stacked layout for the stats row with dividers hidden. No text content, colors, icons, button behavior, or 3D image were changed.
+- **Files changed:** style.css, PROJECT_PROGRESS.md.
+- **Verification:**
+ode --check script.js passed; CSS edits confirmed in place. Not yet browser-tested.
+- **Remaining work:** Browser-check the hero at desktop, tablet, and mobile widths (320px, 768px, desktop).
+
+## Mobile Layout Update (2026-11-28)
+
+- Made simulator activity tabs reflow into a compact grid on narrow screens, with the activity label and title displayed on separate lines.
+- Enabled wrapping for 3D camera controls, terminal controls, and switch controls so narrow simulator panels do not clip buttons.
+- Kept the landing page's mobile navigation visible as a second header row and preserved its stacked feature highlights and single-column learning steps.
+- Verified responsive CSS rules, balanced CSS blocks, JavaScript syntax, and whitespace checks. Browser-based visual testing was unavailable in this environment.
+- The mobile landing page's primary simulator action now fills a 360px maximum tap area.
+
+## Mobile Hero Stats (2026-11-28)
+
+- Replaced the phone-width vertical feature stack with a three-column hero stats row.
+- Stacked each icon above its label, added subtle dividers, and allowed labels to wrap within equal-width columns.
+- Verified the responsive CSS rule and whitespace checks; no browser-based visual runner was available.
+
+## Stylesheet Audit (2026-11-28)
+
+- Repaired two malformed `$10` declarations: the base `main` padding and hero-stat padding now use valid `padding` properties.
+- Removed redundant reduced-motion blocks and unnecessary `!important` from explanation text colors.
+- Allowed the activity-menu secondary actions to wrap on narrow screens.
+- Ran a declaration syntax scan, verified CSS brace balance and menu wrapping, and ran `node --check script.js` plus `git diff --check`.
+
+## Hero Feature Icon Spacing (2026-11-29)
+
+- Fixed the highlighted landing-page feature labels being separated from their icons. The shared hero SVG rule applied automatic margins; the feature icon rule now resets margins, removes the inherited width cap, and reserves a consistent 32px icon column.
+- **Files changed:** `style.css`, `PROJECT_PROGRESS.md`.
+- **Verification:** Not browser-tested.
+
+## Responsive Browser Check (2026-11-29)
+
+- **Request:** Test the website for bugs and check element positioning.
+- **Work completed:** Opened the landing page in headless Edge at desktop, tablet, and mobile viewport sizes. At 390px, the hero heading and simulator button overflowed the right edge. Updated the narrow-screen hero grid and heading sizing/wrapping, adjusted the hero's nested container padding, and capped the CTA width. At 390px the heading and CTA now fit, the feature list stacks cleanly, and the hero image appears below the copy. Desktop at 1440px showed the hero copy and image aligned side by side; the learning steps appear in three columns.
+- **Files changed:** `style.css`, `PROJECT_PROGRESS.md`.
+- **Verification:** `node --check script.js` and `git diff --check` passed. Reviewed headless Edge screenshots at 390px and 1440px. A 320px screenshot attempt was clipped by the browser runner's viewport behavior and is inconclusive. The site interactions were not exercised in this run; activity selection, wiring, reset/undo, saved progress, and 3D behavior still need browser interaction checks.

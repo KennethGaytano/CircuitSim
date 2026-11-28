@@ -5,23 +5,26 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>CircuitSim: Basic Electrical Wiring</title>
 <link rel="stylesheet" href="style.css">
+<link rel="icon" type="image/svg+xml" href="assets/circuitsim-icon.svg">
 </head>
 <body>
 <main id="home">
 <header class="site-header">
-  <a class="brand" href="#home" aria-label="CircuitSim home">
-    <svg viewBox="0 0 52 52" aria-hidden="true"><path d="M4 13h12M4 26h9M4 39h12M36 13h12M39 26h9M36 39h12"/><circle cx="5" cy="13" r="3"/><circle cx="5" cy="26" r="3"/><circle cx="5" cy="39" r="3"/><circle cx="47" cy="13" r="3"/><circle cx="47" cy="26" r="3"/><circle cx="47" cy="39" r="3"/><path class="bolt" d="M28 3 15 28h10l-2 21 15-29H27z"/></svg>
-    <span>Circuit<span>Sim</span></span>
-  </a>
-  <nav class="site-nav" aria-label="Main navigation">
-    <a class="active" href="#home">Home</a>
-    <a href="#howItWorks">How it works</a>
-    <a href="#about">About</a>
-  </nav>
-  <button id="start" class="header-cta" type="button">Start learning <span aria-hidden="true">→</span></button>
+  <div class="container site-header-inner">
+    <a class="brand" href="#home" aria-label="CircuitSim home">
+      <svg viewBox="0 0 52 52" aria-hidden="true"><path d="M4 13h12M4 26h9M4 39h12M36 13h12M39 26h9M36 39h12"/><circle cx="5" cy="13" r="3"/><circle cx="5" cy="26" r="3"/><circle cx="5" cy="39" r="3"/><circle cx="47" cy="13" r="3"/><circle cx="47" cy="26" r="3"/><circle cx="47" cy="39" r="3"/><path class="bolt" d="M28 3 15 28h10l-2 21 15-29H27z"/></svg>
+      <span>Circuit<span>Sim</span></span>
+    </a>
+    <nav class="site-nav" aria-label="Main navigation">
+      <a class="active" href="#home">Home</a>
+      <a href="#howItWorks">How it works</a>
+      <a href="#about">About</a>
+    </nav>
+    <button id="start" class="header-cta" type="button">Start learning <span aria-hidden="true">→</span></button>
+  </div>
 </header>
   <section class="hero">
-    <div class="hero-inner">
+    <div class="hero-inner container">
       <div class="hero-copy">
         <p class="eyebrow"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m2 9 10-5 10 5-10 5zM6 11v5c3 2 9 2 12 0v-5M22 9v6"/></svg>Learn by Doing</p>
         <h1 id="homeTitle" tabindex="-1">Build circuits.<br><span>Understand wiring.</span></h1>
@@ -41,7 +44,7 @@
     </div>
   </section>
   <section id="howItWorks" class="learn-section">
-    <div class="section-inner">
+    <div class="section-inner container">
       <h2>Learn through hands-on practice</h2>
       <span class="heading-mark" aria-hidden="true"></span>
       <div id="how3">
@@ -54,34 +57,46 @@
       <p class="safety-note"><span aria-hidden="true">ⓘ</span> Learning model — not a guide for real electrical installations.</p>
     </div>
   </section>
-  <section id="activities" class="activity-section section-inner">
+  <section id="activities" class="activity-section container">
     <div class="section-heading"><p class="eyebrow light-eyebrow">Practice makes progress</p><h2>Choose your next circuit</h2><p>Start with the basics, then explore more complex wiring.</p></div>
     <ul id="feat"></ul>
   </section>
-  <footer id="about" class="site-footer"><div class="footer-inner"><strong>CircuitSim</strong><span>A hands-on way to learn basic circuit concepts.</span><span class="footer-safety">A simplified learning model, not instructions for real electrical work.</span></div></footer>
+  <footer id="about" class="site-footer"><div class="footer-inner container"><strong>CircuitSim</strong><span>A hands-on way to learn basic circuit concepts.</span><span class="footer-safety">A simplified learning model, not instructions for real electrical work.</span></div></footer>
 </main>
 <div id="menu" hidden>
-<header class="menu-header">
-  <button id="homeBtn" type="button">‹ Home</button>
-  <div class="menu-header-actions">
-    <button id="sandboxOpen" class="secondary" type="button">Open free-build sandbox</button>
-    <button id="tutorialOpen" class="secondary" type="button">Start the beginner tutorial</button>
+<header class="page-header">
+  <div class="container page-header-inner">
+    <button id="homeBtn" type="button">‹ Home</button>
   </div>
 </header>
-<main>
+<main class="container page-main">
   <h1 id="menuTitle" tabindex="-1">Choose an activity</h1>
   <p id="progress" aria-live="polite"></p>
   <button id="resume" hidden>Continue where you left off</button>
-  <ul id="list"></ul>
+  <h2 id="guidedActivitiesTitle">Guided activities</h2>
+  <ul id="list" class="activity-grid"></ul>
+  <details id="moreActivities">
+    <summary>Explore 4 more activities</summary>
+    <ul id="moreList" class="activity-grid"></ul>
+  </details>
+  <details id="otherWaysToLearn">
+    <summary>More ways to learn</summary>
+    <div class="menu-extra-actions">
+      <button id="sandboxOpen" class="secondary" type="button">Open free-build sandbox</button>
+      <button id="tutorialOpen" class="secondary" type="button">Start the beginner tutorial</button>
+    </div>
+  </details>
   <section class="card progress-card" aria-labelledby="progressTitle"><h2 id="progressTitle">Your progress</h2><p id="progressDetail"></p><button id="clearProgress" type="button">Reset saved progress</button></section>
 </main>
 </div>
 <div id="app" hidden>
-<header>
-  <button id="menuBtn">‹ Activities</button>
-  <h1 id="appTitle" tabindex="-1"><svg class="sim-brand-mark" viewBox="0 0 28 28" aria-hidden="true"><path d="M1 14h6l3-7 5 14 4-10 3 3h5"/></svg><span>CircuitSim</span></h1>
+<header class="page-header">
+  <div class="container page-header-inner">
+    <button id="menuBtn">‹ Activities</button>
+    <h1 id="appTitle" tabindex="-1"><svg class="sim-brand-mark" viewBox="0 0 28 28" aria-hidden="true"><path d="M1 14h6l3-7 5 14 4-10 3 3h5"/></svg><span>CircuitSim</span></h1>
+  </div>
 </header>
-<main>
+<main class="container page-main">
   <nav id="tabs" aria-label="Wiring activities"></nav>
   <div class="work">
     <section class="card info">
@@ -104,14 +119,26 @@
       <div id="stage">
         <svg id="svg" viewBox="0 0 360 400" role="group" aria-label="Wiring board"></svg>
         <canvas id="threeCanvas" role="img" aria-hidden="true"></canvas>
-        <div id="threeControls" class="three-controls" hidden>
-          <span>Click switch/breaker: toggle · Drag terminals: connect · Drag wire: remove · Drag elsewhere: rotate · Scroll/buttons: zoom</span>
-          <div class="three-camera-buttons" role="group" aria-label="3D camera controls">
-            <button id="zoomOut3D" type="button" aria-label="Zoom out">−</button>
-            <button id="zoomIn3D" type="button" aria-label="Zoom in">+</button>
-            <button id="reset3DView" type="button">Reset view</button>
-          </div>
+      </div>
+      <div id="threeControls" class="three-controls" hidden>
+        <span>Click switch/breaker: toggle · Drag terminals: connect · Drag wire: remove · Drag elsewhere: rotate · Scroll/buttons: zoom</span>
+        <div class="three-camera-buttons" role="group" aria-label="3D camera controls">
+          <button id="rotateLeft3D" type="button" aria-label="Rotate view left">←</button>
+          <button id="rotateRight3D" type="button" aria-label="Rotate view right">→</button>
+          <button id="rotateUp3D" type="button" aria-label="Rotate view up">↑</button>
+          <button id="rotateDown3D" type="button" aria-label="Rotate view down">↓</button>
+          <button id="zoomOut3D" type="button" aria-label="Zoom out">−</button>
+          <button id="zoomIn3D" type="button" aria-label="Zoom in">+</button>
+          <button id="reset3DView" type="button">Reset view</button>
         </div>
+        <details id="threeKeyboardControls" class="three-keyboard-controls">
+          <summary>Keyboard controls</summary>
+          <p>Select two terminals to connect them. Choose a Remove wire button to disconnect one. Use a switch button to change its state, and press Escape to cancel a selected terminal.</p>
+          <div id="threeTerminalControls" role="group" aria-label="Connect terminals"></div>
+          <div id="threeSwitchControls" role="group" aria-label="Operate switches"></div>
+          <div id="threeWireControls" role="group" aria-label="Remove connected wires"></div>
+          <p id="threeKeyboardStatus" role="status" aria-live="polite">Choose a terminal to start a connection.</p>
+        </details>
       </div>
       <div class="bar">
         <div id="status" aria-live="polite"></div>

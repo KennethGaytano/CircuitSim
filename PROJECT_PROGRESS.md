@@ -21,7 +21,7 @@
 - **Project purpose:** A browser-based interactive introduction to basic circuit wiring.
 - **Main technologies:** HTML, CSS, and JavaScript; Three.js is loaded on demand for the optional 3D view. No build step is documented.
 - **Current status:** In Progress
-- **Last updated:** 2026-11-27
+- **Last updated:** 2026-11-28
 
 ## Current Status
 
@@ -35,9 +35,9 @@ Write a short, factual summary of where the project stands.
 
 | Feature | Status | Notes |
 |---|---|---|
-| Landing page redesign | Needs testing | Dark-mode reference applied; duplicate activity-menu, sandbox, and tutorial shortcuts were removed from the landing page. Desktop and mobile layouts were checked. |
-| Wiring activities and learning tools | Needs testing | Simulator redesign is browser-checked at desktop and mobile widths. The sandbox hides Show guide and Explain circuit while keeping Undo and Reset; guided activities retain all controls. Wires can be removed by dragging or keyboard activation, and terminal-to-terminal dragging still connects wires. Broader circuit-building and progression flows remain untested. |
-| Toggleable 3D activity views | Needs testing | Three.js loads only when selected. Reusable 3D geometry covers the source, battery, switches, breaker, lamps, push button, and outlet; only live wires are drawn. Camera rotation/zoom, mobile sizing, and 2D fallback were browser-checked. Terminal/wire dragging and clickable, animated switches/breakers are implemented; browser verification is still needed. |
+| Landing page redesign | Needs testing | Dark-mode reference applied; duplicate activity-menu, sandbox, and tutorial shortcuts were removed from the landing page. Desktop and 320px/390px mobile layouts were browser-checked; remaining anchor links need testing. |
+| Wiring activities and learning tools | Needs testing | Simulator redesign is browser-checked at desktop and mobile widths. The sandbox hides Show guide and Explain circuit while keeping Undo and Reset; guided activities retain all controls. All eight activity tabs rendered at 390px without horizontal overflow. Wires can be removed by dragging or keyboard activation. Broader circuit-building and progression flows remain untested. |
+| Toggleable 3D activity views | Needs testing | Three.js loads only when selected. Reusable 3D geometry covers the source, battery, switches, breaker, lamps, push button, and outlet; only live wires are drawn. Desktop and mobile views were browser-checked. Keyboard camera rotation, terminal connect/remove, switch operation, and momentary push-button key handling were checked; other browsers and lower-powered devices remain untested. |
 
 Use these status labels consistently:
 - `Not started`
@@ -48,7 +48,40 @@ Use these status labels consistently:
 
 ## Recent Work
 
+### [2026-11-28] - Unify activity chooser page width with landing and simulator pages
+
+- **Request:** Make the "Choose an activity" page use the same page width and layout scale as the landing and activity pages so moving between the three pages feels consistent.
+- **Work completed:** Removed page-specific width/max-width/padding rules on the activity menu so it uses the shared `.container` (max-width 1440px, `--page-pad-x` side padding), `.page-header` (full-width bottom divider, 76px height), and `.page-main` (32px top / 48px bottom padding), matching the activity page. The `‹ Home` button matches the `‹ Activities` button in size, border, radius, and position; the header divider runs edge to edge; the heading, resume button, cards grid, and "Explore 4 more activities" bar align to the container edges; the 3-column card grid stretches full width with the same 12px gap. Responsive behavior matches the activity page: 3 columns desktop, 2 tablet, 1 mobile, same horizontal padding at each breakpoint. Cleaned up redundant mobile overrides (duplicate `#menu main` padding, menu-specific header padding override).
+- **Files changed:** index.html, script.js, style.css, PROJECT_PROGRESS.md
+- **Verification:** `node --check script.js` passed; CSS brace balance checked (445 open / 445 close); the menu page now uses the same container width, header, and spacing as the activity page on all pages.
+- **Remaining work:** Browser-check the menu page at 320px/768px/1440px in additional browsers.
+
+
 Add the latest completed task first. For each task, include:
+
+### [2026-11-28] - Unify activity chooser card styles
+
+- **Request:** Make activity cards `04`–`07` under "Explore 4 more activities" match cards `01`–`03` under "Guided activities" using shared CSS rather than separate overrides.
+- **Work completed:** Added a shared `.activity-grid` class to `#list` and `#moreList` in `index.html`, removed legacy `#list`-only button rules and duplicated `#list`/`#moreList` selectors in `style.css`, and explicitly included `border: 1px solid #1a304a`, `height: 100%`, and `cursor: pointer` on `#menu .activity-grid button`. Kept only `counter-reset: activity 3` and `margin-top: 12px` on `#menu #moreList`.
+- **Files changed:** `index.html`, `style.css`, `PROJECT_PROGRESS.md`.
+- **Verification:** `node --check script.js`, `git diff --check`, and CSS brace balance passed. Verified in headless Edge at `1440px`, `768px`, `390px`, and `320px`: computed styles for cards `04`–`07` matched cards `01`–`03` with zero differences, all seven desktop cards measured `349.3px × 142px` in the 3-column grid, both heading-to-grid gaps measured `12px`, clicking card `04` opened Three-way switch wiring, and no horizontal overflow or runtime errors occurred.
+- **Remaining work:** Test in other browsers and complete broader activity progression flows.
+
+### [2026-11-28] - Audit and repair website screens
+
+- **Request:** Check the UI on every website screen and redesign where needed.
+- **Work completed:** Browser testing found and fixed a JavaScript startup error that stopped navigation from opening the activity menu or simulator. Raised the mobile home navigation and CTA to 44px targets, increased simulator tab label size, and added a branded SVG favicon. Reviewed the home screen, activity chooser, all eight simulator tabs, tutorial and Info dialogs, and 2D/3D simulator views.
+- **Files changed:** `index.html`, `script.js`, `style.css`, `assets/circuitsim-icon.svg`, `PROJECT_PROGRESS.md`.
+- **Verification:** Tested in Edge at 320px, 390px, 768px, 900px, 1024px, and 1440px. The home page, menu, all simulator activities, dialogs, and 3D view had no horizontal overflow. Checked 3D camera rotation, terminal connection and wire removal through keyboard controls, and push-button keydown/keyup behavior. No JavaScript runtime errors occurred after the startup fix; the favicon now resolves.
+- **Remaining work:** Test in other browsers and complete broader activity progression flows.
+
+### [2026-11-28] - Refine activity grouping and 3D keyboard controls
+
+- **Request:** Continue the review follow-ups for an overloaded activity chooser and the simulator's mobile controls and 3D keyboard accessibility.
+- **Work completed:** Kept three activities in the primary group and the remaining four behind a disclosure. Moved sandbox and tutorial actions into a separate “More ways to learn” disclosure, and made completed activities visibly and accessibly labeled. Kept 3D camera controls below the board with 44px targets and added keyboard camera rotation, wire removal, Escape cancellation, and held-button keyboard operation; keyboard control groups retain their focus when wires update.
+- **Files changed:** `index.html`, `script.js`, `style.css`, `PROJECT_PROGRESS.md`.
+- **Verification:** `node --check script.js` and `git diff --check` passed. Not browser-tested in this task.
+- **Remaining work:** Browser-check the chooser and 3D keyboard/mobile controls, including wire connect/remove, switch operation, focus behavior, and layout at narrow widths.
 
 ### [2026-11-27] - Animate 3D switch toggles
 
@@ -234,14 +267,15 @@ Record the important folders and files. Keep this section aligned with the actua
 
 ```text
 project-root/
-├── index.html
-├── style.css
-├── script.js
-├── README.md
-├── PROJECT_RULES.md
-├── PROJECT_PROGRESS.md
-└── assets/
-    └── circuitsim-hero.png
+??? index.html
+??? style.css
+??? script.js
+??? README.md
+??? PROJECT_RULES.md
+??? PROJECT_PROGRESS.md
+??? assets/
+    ??? circuitsim-hero.png
+    ??? circuitsim-icon.svg
 ```
 
 ## Next Steps
@@ -293,11 +327,14 @@ project-root/
 - Check touch vs mouse event handling
 
 ---
-**Last updated**: 2026-11-27
+**Last updated**: 2026-11-28
 
 **Change Log**:
 | Date | Summary |
 |---|---|
+| 2026-11-28 | Unified activity chooser card styles across Guided activities (01–03) and Explore 4 more activities (04–07). |
+| 2026-11-28 | Audited all website screens, fixed JavaScript startup, improved mobile targets and simulator labels, and added a branded favicon. |
+| 2026-11-28 | Grouped activity choices and added keyboard operation for 3D camera, wires, and circuit controls. |
 | 2026-11-27 | Replaced the inline landing-page circuit illustration with the supplied PNG asset. |
 | 2026-11-27 | Extended the landing-page dark electrical-lab theme across the activity menu and wiring app. |
 | 2026-11-27 | Reworked the landing page palette and learning section to follow the dark-mode design reference. |
@@ -326,7 +363,36 @@ Do not turn suggestions into decisions unless the user approves them.
 
 | Date | Summary |
 |---|---|
+| 2026-11-28 | Unified activity chooser card styles across Guided activities (01–03) and Explore 4 more activities (04–07). |
+| 2026-11-28 | Audited all website screens, fixed JavaScript startup, improved mobile targets and simulator labels, and added a branded favicon. |
+| 2026-11-28 | Grouped activity choices and added keyboard operation for 3D camera, wires, and circuit controls. |
 | 2026-11-27 | Replaced the inline landing-page circuit illustration with the supplied PNG asset. |
 | 2026-11-27 | Reworked the landing page palette and learning section to follow the dark-mode design reference. |
 | 2026-11-27 | Redesigned CircuitSim’s landing page to follow the supplied visual reference. |
 | Not yet documented | Progress tracking file created. |
+
+## UI Layout Audit (2026-11-28)
+
+- Traced responsive layout behavior across the landing page, activity menu, 2D simulator, and 3D simulator.
+- Fixed the desktop hero heading overflow by reducing its large-screen maximum font size from 4.35rem to 4.2rem.
+- Fixed mobile step-arrow grid sizing: the rotated arrow had a stretched grid box spanning the full row and overlapping adjacent learning cards. The mobile rule now centers and constrains the arrow box to 24px in both dimensions.
+- Exercised activity selection, menu disclosures, tutorial progression and hint/close actions, simulator tabs and views, guide/explanation disclosures, camera controls, keyboard terminal and switch controls, wire add/remove, undo/reset, progression, and long-label stress cases.
+- Checked responsive widths from 320px through 1920px, including 320px, 390px, tablet widths, and desktop widths. The observed document-level horizontal overflow checks passed. Simulator controls and keyboard sections expanded in normal flow during the checks.
+- Browser checks used headless Edge. Follow-up validation is still needed in other browser engines and on physical touch devices.
+
+## Contributor Guide (2026-11-28)
+
+- Added `AGENTS.md` with repository structure, local serving and syntax-check commands, coding conventions, UI validation expectations, and contribution guidance.
+- Confirmed the project has no package manifest, build process, or automated test framework; documented browser-based UI validation accordingly.
+
+## Activity Chooser Update (2026-11-28)
+
+- Added a clear “Guided activities” heading above the three starter choices.
+- Constrained activity card content to its card width and enabled long text to wrap safely.
+- Verified unique HTML IDs, balanced CSS braces, JavaScript syntax, and whitespace checks.
+
+## Activity Chooser Rendering Fix (2026-11-28)
+
+- Fixed the expanded “Explore more activities” list: it now uses the same responsive grid, reset list styling, and card typography as the starter activities.
+- Explicitly set card text color, alignment, and inherited font; descriptions now begin on their own line in muted text.
+- Validated CSS brace balance and `git diff --check`.

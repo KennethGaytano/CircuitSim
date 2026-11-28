@@ -378,6 +378,8 @@ let threeRenderedState = null;
 let threeRenderedActivity = -1;
 let threeCameraState = { ...THREE_CAMERA_HOME };
 let view3D = false;
+let keyboardTerminalSelection = null;
+let threeMomentarySwitchId = null;
 
 function loadThreeLibrary() {
   if (window.THREE) return Promise.resolve(window.THREE);
@@ -413,9 +415,203 @@ function updateViewControls() {
   $("threeCanvas").setAttribute("aria-hidden", String(!view3D));
   $("threeCanvas").setAttribute(
     "aria-label",
-    `3D model of ${ACTS[cur].title}. Click a switch or breaker to toggle it, drag between terminals to connect wires, drag a wire to remove it, or drag elsewhere to rotate.`,
+    `3D model of ${ACTS[cur].title}. Click a switch or breaker to toggle it, drag between terminals to connect wires, drag a wire to remove it, or drag elsewhere to rotate. Keyboard controls are available below the model.`,
   );
 }
+
+function terminalLabel(id) {
+  const [componentId, terminalId] = id.split(".");
+  const component = ACTS[cur].comps.find((item) => item.id === componentId);
+  const terminal = component.terms.find((item) => item.n === terminalId);
+  return `${component.name} terminal ${terminal.lab}`;
+}
+
+function updateThreeKeyboardSwitchLabels() {
+  [...$("threeSwitchControls").children].forEach((button) => {
+    const component = ACTS[cur].comps.find(
+      (item) => item.id === button.dataset.switchId,
+    );
+    const current =
+      component.type === "sw3"
+        ? `position ${state[component.id] ? "B" : "A"}`
+        : component.type === "button"
+          ? state[component.id]
+            ? "pressed"
+            : "released"
+          : state[component.id]
+            ? "on"
+            : "off";
+    button.setAttribute("aria-pressed", String(Boolean(state[component.id])));
+    button.textContent = `${component.type === "button" ? "Press" : "Toggle"} ${component.name} (currently ${current})`;
+  });
+}
+
+function setThreeMomentarySwitch(id, pressed) {
+  if (pressed && !done) {
+    $("threeKeyboardStatus").textContent =
+      "Finish the wiring before pressing the button.";
+    return;
+  }
+  if (state[id] === pressed) return;
+
+  state[id] = pressed;
+  render();
+}
+
+function updateThreeKeyboardWireControls() {
+  const wireControls = $("threeWireControls");
+  const activeElement = document.activeElement;
+  const focusedWireIndex = wireControls.contains(activeElement)
+    ? Number(activeElement.dataset.wireIndex)
+    : null;
+
+  wireControls.replaceChildren();
+  wires.forEach(([a, b], index) => {
+    const button = document.createElement("button");
+    button.type = "button";
+    button.dataset.wireIndex = String(index);
+    button.textContent = `Remove wire: ${terminalLabel(a)} to ${terminalLabel(b)}`;
+    button.addEventListener("click", () => {
+      wires.splice(index, 1);
+      update();
+      $("threeKeyboardStatus").textContent =
+        `Removed wire from ${terminalLabel(a)} to ${terminalLabel(b)}.`;
+    });
+    wireControls.appendChild(button);
+  });
+
+  if (focusedWireIndex !== null && wireControls.children[focusedWireIndex]) {
+    wireControls.children[focusedWireIndex].focus({ preventScroll: true });
+  }
+}
+
+function renderThreeKeyboardControls() {
+  const terminalControls = $("threeTerminalControls");
+  const switchControls = $("threeSwitchControls");
+  const activeElement = document.activeElement;
+  const focusedTerminalId =
+    terminalControls.contains(activeElement) && activeElement.dataset.terminalId;
+  const focusedSwitchId =
+    switchControls.contains(activeElement) && activeElement.dataset.switchId;
+
+  keyboardTerminalSelection = null;
+  terminalControls.replaceChildren();
+  switchControls.replaceChildren();
+  $("threeKeyboardStatus").textContent =
+    "Choose a terminal to start a connection.";
+
+  ACTS[cur].comps.forEach((component) => {
+    component.terms.forEach((terminal) => {
+      const id = `${component.id}.${terminal.n}`;
+      const button = document.createElement("button");
+      button.type = "button";
+      button.dataset.terminalId = id;
+      button.setAttribute("aria-pressed", "false");
+      button.textContent = terminalLabel(id);
+      button.addEventListener("click", () => {
+        if (!keyboardTerminalSelection) {
+          keyboardTerminalSelection = id;
+          button.setAttribute("aria-pressed", "true");
+          $("threeKeyboardStatus").textContent =
+            `${terminalLabel(id)} selected. Choose another terminal to connect.`;
+          return;
+        }
+
+        const startId = keyboardTerminalSelection;
+        keyboardTerminalSelection = null;
+        terminalControls
+          .querySelectorAll("button")
+          .forEach((item) => item.setAttribute("aria-pressed", "false"));
+        if (startId === id) {
+          $("threeKeyboardStatus").textContent =
+            "Choose a different terminal to make a connection.";
+          return;
+        }
+
+        const previousCount = wires.length;
+        addWire(startId, id);
+        if (wires.length === previousCount) {
+          $("threeKeyboardStatus").textContent =
+            "Those terminals are already connected.";
+          return;
+        }
+        update();
+        $("threeKeyboardStatus").textContent =
+          `Connected ${terminalLabel(startId)} to ${terminalLabel(id)}.`;
+      });
+      terminalControls.appendChild(button);
+    });
+  });
+
+  ACTS[cur].comps
+    .filter((component) =>
+      ["sw", "sw3", "brk", "button"].includes(component.type),
+    )
+    .forEach((component) => {
+      const button = document.createElement("button");
+      button.type = "button";
+      button.dataset.switchId = component.id;
+      if (component.type === "button") {
+        button.addEventListener("pointerdown", () => {
+          threeMomentarySwitchId = component.id;
+          setThreeMomentarySwitch(component.id, true);
+        });
+        button.addEventListener("keydown", (event) => {
+          if (!["Enter", " "].includes(event.key)) return;
+          event.preventDefault();
+          if (!event.repeat) setThreeMomentarySwitch(component.id, true);
+        });
+        button.addEventListener("keyup", (event) => {
+          if (!["Enter", " "].includes(event.key)) return;
+          threeMomentarySwitchId = null;
+          setThreeMomentarySwitch(component.id, false);
+        });
+        button.addEventListener("blur", () => {
+          if (state[component.id]) setThreeMomentarySwitch(component.id, false);
+        });
+      } else {
+        button.addEventListener("click", () =>
+          toggleCircuitSwitch(component.id),
+        );
+      }
+      switchControls.appendChild(button);
+    });
+
+  updateThreeKeyboardSwitchLabels();
+  updateThreeKeyboardWireControls();
+  const focusedControl = [...terminalControls.children, ...switchControls.children].find(
+    (button) =>
+      button.dataset.terminalId === focusedTerminalId ||
+      button.dataset.switchId === focusedSwitchId,
+  );
+  if (focusedControl) focusedControl.focus({ preventScroll: true });
+}
+
+document.getElementById("threeKeyboardControls").addEventListener("keydown", (event) => {
+  if (event.key !== "Escape" || !keyboardTerminalSelection) return;
+
+  const selectedId = keyboardTerminalSelection;
+  keyboardTerminalSelection = null;
+  document.getElementById("threeTerminalControls")
+    .querySelectorAll("button")
+    .forEach((button) => button.setAttribute("aria-pressed", "false"));
+  document.getElementById("threeKeyboardStatus").textContent =
+    `Cancelled connection from ${terminalLabel(selectedId)}.`;
+  event.preventDefault();
+});
+
+window.addEventListener("pointerup", () => {
+  if (!threeMomentarySwitchId) return;
+  const id = threeMomentarySwitchId;
+  threeMomentarySwitchId = null;
+  setThreeMomentarySwitch(id, false);
+});
+window.addEventListener("pointercancel", () => {
+  if (!threeMomentarySwitchId) return;
+  const id = threeMomentarySwitchId;
+  threeMomentarySwitchId = null;
+  setThreeMomentarySwitch(id, false);
+});
 
 function setCameraPosition() {
   if (!threeCamera) return;
@@ -429,6 +625,15 @@ function setCameraPosition() {
   threeCamera.up.set(0, 0, 1);
   threeCamera.lookAt(0, 0, 0);
   requestThreeDraw();
+}
+
+function rotate3DView(thetaChange, phiChange) {
+  threeCameraState.theta += thetaChange;
+  threeCameraState.phi = Math.max(
+    0.2,
+    Math.min(1.42, threeCameraState.phi + phiChange),
+  );
+  setCameraPosition();
 }
 
 function init3D() {
@@ -889,11 +1094,11 @@ function createComponent3D(component, previousState) {
   group.position.set(0, 200 - component.y, 0);
   threeModel.add(group);
 
-  addBox3D(group, [144, height - 14, 10], [0, 0, 4], "#102b4b", {
+  addBox3D(group, [176, height - 14, 10], [0, 0, 4], "#102b4b", {
     roughness: 0.48,
     metalness: 0.42,
   });
-  addBox3D(group, [132, height - 21, 4], [0, 0, 11], "#0c1a2c");
+  addBox3D(group, [176, height - 21, 4], [0, 0, 11], "#0c1a2c");
 
   if (component.type === "bat") {
     addBox3D(group, [66, 34, 24], [0, 0, 24], "#d9e3f1", {
@@ -1097,7 +1302,7 @@ function wireColor3D(id) {
   return 0x31caff;
 }
 
-function createWire3D(a, b, isLit, wireIndex) {
+function wireCurve3D(a, b) {
   const T = window.THREE;
   const start = pos3D(a);
   const end = pos3D(b);
@@ -1111,6 +1316,32 @@ function createWire3D(a, b, isLit, wireIndex) {
     false,
     "centripetal",
   );
+  return curve;
+}
+
+function createGuideWire3D(a, b) {
+  const T = window.THREE;
+  const geometry = new T.BufferGeometry().setFromPoints(
+    wireCurve3D(a, b).getPoints(48),
+  );
+  const guide = new T.Line(
+    geometry,
+    new T.LineDashedMaterial({
+      color: 0x00e5ff,
+      dashSize: 7,
+      gapSize: 5,
+      transparent: true,
+      opacity: 0.8,
+      depthWrite: false,
+    }),
+  );
+  guide.computeLineDistances();
+  threeModel.add(guide);
+}
+
+function createWire3D(a, b, isLit, wireIndex) {
+  const T = window.THREE;
+  const curve = wireCurve3D(a, b);
   const color = wireColor3D(a);
   const wire = new T.Mesh(
     new T.TubeGeometry(curve, 32, 2.2, 8, false),
@@ -1214,6 +1445,13 @@ function render3D() {
     ACTS[cur].comps.forEach((component) =>
       createComponent3D(component, previousState),
     );
+    if (showGuide && ACTS[cur].nets) {
+      ACTS[cur].nets.forEach((net) => {
+        for (let i = 0; i < net.length - 1; i++) {
+          createGuideWire3D(net[i], net[i + 1]);
+        }
+      });
+    }
     // Draw only actual connections, not the activity's target wiring.
     wires.forEach(([a, b], index) => createWire3D(a, b, lit(), index));
     threeRenderedState = { ...state };
@@ -1618,6 +1856,8 @@ function render() {
     b.classList.toggle("done", solved.has(i));
     b.setAttribute("aria-label", a_label(i));
   });
+  updateThreeKeyboardSwitchLabels();
+  updateThreeKeyboardWireControls();
   if (done && $("explanation"))
     $("explanation").textContent = explanationText();
   persist();
@@ -1658,6 +1898,7 @@ function load(i, reset = false) {
   done = false;
   showGuide = false;
   const A = ACTS[i];
+  renderThreeKeyboardControls();
   $("title").textContent = A.title;
   $("goal").textContent = A.goal;
   $("tip").textContent = "Tip: " + A.tip;
@@ -1898,9 +2139,14 @@ function openApp(i) {
   }
 }
 function openMenu() {
-  [...$("list").children].forEach((li, i) =>
-    li.firstChild.classList.toggle("done", solved.has(i)),
-  );
+  [...$("list").children, ...$("moreList").children].forEach((li) => {
+    const activityIndex = Number(li.dataset.activityIndex);
+    li.firstChild.classList.toggle("done", solved.has(activityIndex));
+    li.firstChild.setAttribute(
+      "aria-label",
+      `${ACTS[activityIndex].title}${solved.has(activityIndex) ? ", completed" : ""}`,
+    );
+  });
   $("progress").textContent = solved.size
     ? `${solved.size} of ${activityCount()} activities completed`
     : "Start with any activity.";
@@ -1921,8 +2167,9 @@ ACTS.forEach((a, i) => {
     b = document.createElement("button");
   b.innerHTML = html;
   b.onclick = () => openApp(i);
+  li.dataset.activityIndex = String(i);
   li.appendChild(b);
-  $("list").appendChild(li);
+  $(i < 3 ? "list" : "moreList").appendChild(li);
   if (i < 3) {
     const f = document.createElement("li"),
       fb = document.createElement("button");
@@ -1975,6 +2222,10 @@ $("sandboxOpen").onclick = openSandbox;
 $("clearProgress").onclick = clearProgress;
 $("view2D").onclick = () => setViewMode(false);
 $("view3D").onclick = () => setViewMode(true);
+$("rotateLeft3D").onclick = () => rotate3DView(-0.14, 0);
+$("rotateRight3D").onclick = () => rotate3DView(0.14, 0);
+$("rotateUp3D").onclick = () => rotate3DView(0, -0.12);
+$("rotateDown3D").onclick = () => rotate3DView(0, 0.12);
 $("zoomOut3D").onclick = () => zoom3D(1.15);
 $("zoomIn3D").onclick = () => zoom3D(0.87);
 $("reset3DView").onclick = () => {

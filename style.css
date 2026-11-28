@@ -421,10 +421,10 @@ summary {
   font-size: 0.92rem;
 }
 summary::before {
-  content: "&#9662;";
+  content: "\25B8";
 }
 details[open] summary::before {
-  content: "&#9656;";
+  content: "\25BE";
 }
 details {
   margin-top: 4px;
@@ -975,6 +975,7 @@ body {
 
 .hero-highlights > div:not(:first-child) {
   border-left: 1px solid rgba(210, 232, 244, 0.7);
+  padding-left: clamp(8px, 1.5vw, 12px);
 }
 .hero-highlights > div span {
   white-space: nowrap;
@@ -2462,6 +2463,7 @@ html {
 }
 
 #home .highlight-icon {
+  order: 0;
   width: 32px;
   height: 36px;
   max-width: none;
@@ -2671,6 +2673,12 @@ html {
 }
 
 @media (max-width: 700px) {
+  #home .site-header-inner {
+    grid-template-columns: minmax(0, 1fr) auto;
+    grid-template-rows: auto auto;
+    row-gap: 4px;
+  }
+
   #home .site-header {
     grid-template-columns: minmax(0, 1fr) auto;
     grid-template-rows: auto auto;
@@ -2773,20 +2781,28 @@ html {
   }
 
   #home .hero-highlights {
-    flex-direction: column;
-    align-items: flex-start;
-    gap: clamp(8px, 1.5vw, 12px);
-    margin-top: 32px;
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    align-items: start;
+    gap: 0;
+    margin-top: 24px;
   }
   #home .hero-highlights > div {
-    width: 100%;
+    min-width: 0;
     min-height: auto;
-    padding: 0;
-    gap: clamp(8px, 1.5vw, 12px);
+    padding: 0 6px;
+    flex-direction: column;
+    align-items: center;
+    gap: 6px;
+    font-size: clamp(0.68rem, 2.8vw, 0.78rem);
+    text-align: center;
   }
   #home .hero-highlights > div:not(:first-child) {
-    padding-left: 0;
-    border: none;
+    padding-left: 6px;
+    border-left: 1px solid #57718d;
+  }
+  #home .hero-highlights > div span {
+    white-space: normal;
   }
 
   #home .hero-actions {
@@ -2796,5 +2812,38 @@ html {
   #home .hero-actions button {
     width: 100%;
     min-height: 52px;
+  }
+}
+
+@media (max-width: 360px) {
+  #home .site-header-inner {
+    gap: 4px;
+  }
+
+  #home .brand {
+    gap: 5px;
+    font-size: 0.95rem;
+  }
+
+  #home .brand svg {
+    width: 32px;
+    height: 32px;
+  }
+
+  #home .header-cta {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 3px;
+    width: max-content;
+    max-width: none;
+    padding: 0 8px;
+    font-size: 0.68rem;
+    white-space: nowrap;
+  }
+
+  #home .header-cta span {
+    flex: none;
+    margin-left: 0;
   }
 }

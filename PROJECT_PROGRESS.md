@@ -440,3 +440,27 @@ ode --check script.js passed; CSS edits confirmed in place. Not yet browser-test
 - **Work completed:** Opened the landing page in headless Edge at desktop, tablet, and mobile viewport sizes. At 390px, the hero heading and simulator button overflowed the right edge. Updated the narrow-screen hero grid and heading sizing/wrapping, adjusted the hero's nested container padding, and capped the CTA width. At 390px the heading and CTA now fit, the feature list stacks cleanly, and the hero image appears below the copy. Desktop at 1440px showed the hero copy and image aligned side by side; the learning steps appear in three columns.
 - **Files changed:** `style.css`, `PROJECT_PROGRESS.md`.
 - **Verification:** `node --check script.js` and `git diff --check` passed. Reviewed headless Edge screenshots at 390px and 1440px. A 320px screenshot attempt was clipped by the browser runner's viewport behavior and is inconclusive. The site interactions were not exercised in this run; activity selection, wiring, reset/undo, saved progress, and 3D behavior still need browser interaction checks.
+
+## Hero Feature Icon Order (2026-11-29)
+
+- Fixed the landing-page hero feature icons appearing after their labels. The desktop hero SVG ordering rule also affected these inline icons; the feature icon rule now restores their intended order before the text. Added left padding after feature dividers so the next group's icon does not sit against the divider.
+- **Files changed:** `style.css`, `PROJECT_PROGRESS.md`.
+- **Verification:** Not browser-tested.
+
+## Activity Menu Disclosure Indicators (2026-11-29)
+
+- Fixed disclosure arrows appearing as literal HTML entities. CSS pseudo-element content now uses Unicode escapes, with arrows that point right when closed and down when open.
+- **Files changed:** `style.css`, `PROJECT_PROGRESS.md`.
+- **Verification:** Not browser-tested.
+
+## Landing Page Mobile Layout (2026-11-29)
+
+- Reworked the phone-width hero highlights into three equal columns with icons above readable labels, replacing the long stacked list. At widths up to 360px, reduced the brand and header button sizing and prevented the button label from wrapping.
+- **Files changed:** `style.css`, `PROJECT_PROGRESS.md`.
+- **Verification:** Not browser-tested; visual review is still needed at 320px and 390px.
+
+## Narrow Mobile Header Button (2026-11-29)
+
+- Fixed the landing-page header button wrapping its label and arrow onto multiple lines. The mobile grid rules now target the actual `.site-header-inner` grid, giving the brand and button separate correctly sized columns; the button keeps its content-width inline layout.
+- **Files changed:** `style.css`, `PROJECT_PROGRESS.md`.
+- **Verification:** Not browser-tested.
